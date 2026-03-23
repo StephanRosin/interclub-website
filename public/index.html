@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interclub 2026 | TC Waidberg</title>
+  <link rel="preload" href="./fonts/manrope-400.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="preload" href="./fonts/manrope-700.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="icon" type="image/png" sizes="64x64" href="./favicon.png" />
+  <link rel="shortcut icon" href="./favicon.ico" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <h1>TCW Interclub 2026</h1>
+        <div id="header-stand" class="subhead">Stand 22. März 2026</div>
+        <div class="page-nav" aria-label="Seitennavigation">
+          <div class="switch" role="tablist" aria-label="Seitenbereiche">
+            <button class="active" type="button" data-view="teams">Teams</button>
+            <button type="button" data-view="training">Trainingsplan</button>
+            <button type="button" data-view="matches">Spieltermine</button>
+          </div>
+        </div>
+      </div>
+      <div class="logo-wrap" aria-label="TC Waidberg Logo">
+        <img src="./logo-tcw.png" alt="TC Waidberg Logo" />
+      </div>
+    </section>
+
+    <section id="view-teams" class="view active" aria-live="polite">
+      <section class="toolbar" aria-label="Filterleiste">
+        <div class="switch" role="tablist" aria-label="Kategorie">
+          <button id="btn-damen" class="active" type="button" data-key="damen">Damen</button>
+          <button id="btn-herren" type="button" data-key="herren">Herren</button>
+        </div>
+      </section>
+      <section id="teams-grid" class="grid"></section>
+      <div id="teams-empty" class="empty">Keine Teams für diese Auswahl.</div>
+    </section>
+
+    <section id="view-training" class="view" aria-live="polite">
+      <section class="toolbar" aria-label="Tag auswählen">
+        <div class="switch" role="tablist" aria-label="Wochentag">
+          <button class="active" type="button" data-day="Montag">Montag</button>
+          <button type="button" data-day="Dienstag">Dienstag</button>
+          <button type="button" data-day="Mittwoch">Mittwoch</button>
+          <button type="button" data-day="Donnerstag">Donnerstag</button>
+          <button type="button" data-day="Freitag">Freitag</button>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Zeit</th>
+                <th>Platz 1</th>
+                <th>Platz 2</th>
+                <th>Platz 3</th>
+                <th>Platz 4</th>
+                <th>Platz 5</th>
+                <th>Platz 6</th>
+              </tr>
+            </thead>
+            <tbody id="plan-body"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="legend">
+        <h2>Grundsätze / Legende</h2>
+        <ul id="legend-list"></ul>
+      </section>
+    </section>
+
+    <section id="view-matches" class="view" aria-live="polite">
+      <section class="toolbar" aria-label="Filter und externe Links">
+        <div class="switch" role="tablist" aria-label="Runde">
+          <button class="active" type="button" data-round="1">Runde 1</button>
+          <button type="button" data-round="2">Runde 2</button>
+          <button type="button" data-round="3">Runde 3</button>
+          <button type="button" data-round="4">Runde 4</button>
+          <button type="button" data-round="5">Runde 5</button>
+        </div>
+        <a class="cta-link" href="https://www.mytennis.ch/de/interclub/vereinsergebnisse?clubId=1298&year=2026" target="_blank" rel="noopener noreferrer">
+          Link zu Swisstennis
+        </a>
+      </section>
+      <section class="panel">
+        <div class="table-wrap">
+          <table class="matches-table">
+            <thead>
+              <tr>
+                <th>Datum</th>
+                <th>Zeit</th>
+                <th>Liga</th>
+                <th>Heimteam</th>
+                <th>Gastteam</th>
+              </tr>
+            </thead>
+            <tbody id="matches-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <template id="card-template">
+    <article class="card">
+      <header class="card-head">
+        <h2 class="card-title"></h2>
+        <div class="card-meta">
+          <div class="meta-line meta-teamziel"></div>
+          <div class="meta-line meta-training"></div>
+        </div>
+      </header>
+      <ul class="players"></ul>
+    </article>
+  </template>
+
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interclub 2026 | TC Waidberg</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue-900: #172b7b;
+      --blue-800: #25348b;
+      --green-600: #5fa637;
+      --green-100: #e7f5df;
+      --text: #172033;
+      --muted: #57627b;
+      --line: #d3ddf1;
+      --surface: #ffffff;
+      --shadow: 0 14px 30px rgba(23, 43, 123, 0.12);
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Manrope", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background:
+        linear-gradient(rgba(10, 19, 58, 0.34), rgba(10, 19, 58, 0.34)),
+        url("./bg-home.jpg") center / cover fixed no-repeat;
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px clamp(18px, 2.6vw, 36px) 44px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      padding: clamp(18px, 2.2vw, 26px);
+    }
+
+    h1 {
+      margin: 0;
+      line-height: 1.02;
+      color: var(--blue-900);
+      font-size: clamp(1.55rem, 3.5vw, 2.6rem);
+      font-weight: 800;
+    }
+
+    .subhead {
+      margin-top: 8px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .logo-wrap {
+      width: clamp(86px, 11vw, 128px);
+      aspect-ratio: 1 / 1;
+      border-radius: 22px;
+      background: #fff;
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+      padding: 10px;
+      box-shadow: 0 10px 24px rgba(23, 43, 123, 0.12);
+    }
+
+    .logo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .page-nav {
+      margin-top: 14px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .toolbar {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+    }
+
+    .switch {
+      display: inline-flex;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px;
+      box-shadow: 0 6px 14px rgba(23, 43, 123, 0.08);
+      flex: 0 0 auto;
+    }
+
+    .switch button,
+    .switch a {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-weight: 700;
+      padding: 10px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all .18s ease;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .switch .active {
+      background: linear-gradient(135deg, var(--blue-800), var(--green-600));
+      color: #fff;
+      box-shadow: 0 8px 16px rgba(37, 52, 139, 0.28);
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .grid {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      grid-column: span 4;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      overflow: clip;
+      box-shadow: 0 8px 18px rgba(23, 43, 123, 0.09);
+      display: flex;
+      flex-direction: column;
+      min-height: 250px;
+    }
+
+    .card-head {
+      background: var(--blue-800);
+      color: #fff;
+      padding: 14px 14px 12px;
+      border-bottom: 4px solid var(--green-600);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 1.02rem;
+      line-height: 1.24;
+      font-weight: 800;
+    }
+
+    .card-meta {
+      font-size: 0.83rem;
+      line-height: 1.28;
+      font-weight: 500;
+      display: grid;
+      gap: 3px;
+      margin-top: 2px;
+    }
+
+    .meta-line { opacity: 0.96; }
+
+    .players {
+      list-style: none;
+      margin: 0;
+      padding: 10px 14px 14px;
+      display: grid;
+      gap: 7px;
+      font-size: 0.92rem;
+      color: var(--text);
+    }
+
+    .players li {
+      line-height: 1.24;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .player-link {
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 2px;
+    }
+
+    .player-rank {
+      font-weight: 800;
+      color: var(--muted);
+      white-space: nowrap;
+      text-align: right;
+    }
+
+    .empty {
+      margin-top: 26px;
+      border: 1px dashed var(--line);
+      border-radius: 16px;
+      background: #fff;
+      color: var(--muted);
+      padding: 16px;
+      text-align: center;
+      display: none;
+    }
+
+    .panel {
+      margin-top: 16px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 8px 18px rgba(23, 43, 123, 0.09);
+      overflow: hidden;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 860px;
+    }
+
+    .matches-table {
+      min-width: 980px;
+    }
+
+    thead th {
+      background: var(--blue-800);
+      color: #fff;
+      text-align: left;
+      font-size: 0.88rem;
+      padding: 12px;
+      border-bottom: 3px solid var(--green-600);
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.9rem;
+      vertical-align: top;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #fafcff;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    td.time,
+    .col-date,
+    .col-time {
+      white-space: nowrap;
+    }
+
+    td.time,
+    .date-label {
+      font-weight: 800;
+      color: var(--blue-900);
+    }
+
+    .muted {
+      color: #9aa5be;
+    }
+
+    .legend {
+      margin-top: 16px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 8px 18px rgba(23, 43, 123, 0.09);
+      padding: 16px;
+    }
+
+    .legend h2 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+      color: var(--blue-900);
+    }
+
+    .legend ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+
+    .legend li {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px 10px;
+      background: #fbfcff;
+    }
+
+    .legend strong {
+      color: var(--blue-900);
+    }
+
+    .cta-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--blue-900);
+      font-weight: 800;
+      text-decoration: none;
+      box-shadow: 0 6px 14px rgba(23, 43, 123, 0.08);
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    .club-name {
+      font-weight: 800;
+      color: var(--blue-900);
+    }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: minmax(0, 1fr) auto; }
+      .logo-wrap { width: 76px; }
+      .card { grid-column: span 6; }
+    }
+
+    @media (max-width: 620px) {
+      .page { padding-inline: 12px; }
+      .card { grid-column: span 12; }
+      .players { font-size: 0.9rem; }
+      .switch button,
+      .switch a,
+      .cta-link { padding: 9px 12px; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .page { max-width: none; padding: 0; }
+      .hero, .toolbar, .panel, .legend { box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <h1>TCW Interclub 2026</h1>
+        <div id="header-stand" class="subhead">Stand 22. März 2026</div>
+        <div class="page-nav" aria-label="Seitennavigation">
+          <div class="switch" role="tablist" aria-label="Seitenbereiche">
+            <button class="active" type="button" data-view="teams">Teams</button>
+            <button type="button" data-view="training">Trainingsplan</button>
+            <button type="button" data-view="matches">Spieltermine</button>
+          </div>
+        </div>
+      </div>
+      <div class="logo-wrap" aria-label="TC Waidberg Logo">
+        <img src="https://tcwaidberg.ch/uploads/1175/admin/website_header/logo_tcwaidberg_200.png" alt="TC Waidberg Logo" />
+      </div>
+    </section>
+
+    <section id="view-teams" class="view active" aria-live="polite">
+      <section class="toolbar" aria-label="Filterleiste">
+        <div class="switch" role="tablist" aria-label="Kategorie">
+          <button id="btn-damen" class="active" type="button" data-key="damen">Damen</button>
+          <button id="btn-herren" type="button" data-key="herren">Herren</button>
+        </div>
+      </section>
+      <section id="teams-grid" class="grid"></section>
+      <div id="teams-empty" class="empty">Keine Teams für diese Auswahl.</div>
+    </section>
+
+    <section id="view-training" class="view" aria-live="polite">
+      <section class="toolbar" aria-label="Tag auswählen">
+        <div class="switch" role="tablist" aria-label="Wochentag">
+          <button class="active" type="button" data-day="Montag">Montag</button>
+          <button type="button" data-day="Dienstag">Dienstag</button>
+          <button type="button" data-day="Mittwoch">Mittwoch</button>
+          <button type="button" data-day="Donnerstag">Donnerstag</button>
+          <button type="button" data-day="Freitag">Freitag</button>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Zeit</th>
+                <th>Platz 1</th>
+                <th>Platz 2</th>
+                <th>Platz 3</th>
+                <th>Platz 4</th>
+                <th>Platz 5</th>
+                <th>Platz 6</th>
+              </tr>
+            </thead>
+            <tbody id="plan-body"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="legend">
+        <h2>Grundsätze / Legende</h2>
+        <ul id="legend-list"></ul>
+      </section>
+    </section>
+
+    <section id="view-matches" class="view" aria-live="polite">
+      <section class="toolbar" aria-label="Filter und externe Links">
+        <div class="switch" role="tablist" aria-label="Runde">
+          <button class="active" type="button" data-round="1">Runde 1</button>
+          <button type="button" data-round="2">Runde 2</button>
+          <button type="button" data-round="3">Runde 3</button>
+          <button type="button" data-round="4">Runde 4</button>
+          <button type="button" data-round="5">Runde 5</button>
+        </div>
+        <a class="cta-link" href="https://www.mytennis.ch/de/interclub/vereinsergebnisse?clubId=1298&year=2026" target="_blank" rel="noopener noreferrer">
+          Link zu Swisstennis
+        </a>
+      </section>
+      <section class="panel">
+        <div class="table-wrap">
+          <table class="matches-table">
+            <thead>
+              <tr>
+                <th>Datum</th>
+                <th>Zeit</th>
+                <th>Liga</th>
+                <th>Heimteam</th>
+                <th>Gastteam</th>
+              </tr>
+            </thead>
+            <tbody id="matches-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <template id="card-template">
+    <article class="card">
+      <header class="card-head">
+        <h2 class="card-title"></h2>
+        <div class="card-meta">
+          <div class="meta-line meta-teamziel"></div>
+          <div class="meta-line meta-training"></div>
+        </div>
+      </header>
+      <ul class="players"></ul>
+    </article>
+  </template>
+
+  <script>
+    const PLAN_DATA = {
+      "Montag": [{"time":"08:00-09:00","courts":["","","","","",""]},{"time":"09:00-10:00","courts":["","","","","",""]},{"time":"10:00-11:00","courts":["","","","","",""]},{"time":"11:00-12:00","courts":["","","","","",""]},{"time":"12:00-13:00","courts":["","","","","",""]},{"time":"13:00-14:00","courts":["","","","","",""]},{"time":"14:00-15:00","courts":["","","","","","Tennisschule"]},{"time":"15:00-16:00","courts":["","","","","","Tennisschule"]},{"time":"16:00-17:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"17:00-18:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"18:00-19:00","courts":["12h","12h","12h","12h","TS (TCW)","Tennisschule"]},{"time":"19:00-20:00","courts":["1. Liga (Xenia)","1. Liga (Xenia)","55+ (P)","55+ (P)","TS (TCW)","Tennisschule"]},{"time":"20:00-21:00","courts":["2. Liga (Sophie)","2. Liga (Sophie)","45+ (M)","45+ (M)","TS (TCW)","Tennisschule"]},{"time":"21:00-22:00","courts":["12h","12h","45+ (M)","12h","TS (TCW)","Tennisschule"]}],
+      "Dienstag": [{"time":"08:00-09:00","courts":["","","","","","Tennisschule"]},{"time":"09:00-10:00","courts":["Senioren-Treff","Senioren-Treff","Senioren-Treff","","","Tennisschule"]},{"time":"10:00-11:00","courts":["Senioren-Treff","Senioren-Treff","Senioren-Treff","","","Tennisschule"]},{"time":"11:00-12:00","courts":["Senioren-Treff","Senioren-Treff","Senioren-Treff","","","Tennisschule"]},{"time":"12:00-13:00","courts":["","","","","","Tennisschule"]},{"time":"13:00-14:00","courts":["","","","","","Tennisschule"]},{"time":"14:00-15:00","courts":["","","","","","Tennisschule"]},{"time":"15:00-16:00","courts":["","","","","","Tennisschule"]},{"time":"16:00-17:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"17:00-18:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"18:00-19:00","courts":["12h","12h","12h","12h","TS (TCW)","Tennisschule"]},{"time":"19:00-20:00","courts":["1. Liga (Alex)","1. Liga (Alex)","30+ (Florine)","30+ (Florine)","TS (TCW)","Tennisschule"]},{"time":"20:00-21:00","courts":["1. Liga (Alex)","2. Liga (Nico)","2. Liga (Nico)","12h","TS (TCW)","Tennisschule"]},{"time":"21:00-22:00","courts":["12h","2. Liga (Nico)","12h","12h","TS (TCW)","Tennisschule"]}],
+      "Mittwoch": [{"time":"08:00-09:00","courts":["","","","","","Tennisschule"]},{"time":"09:00-10:00","courts":["","","","","","Tennisschule"]},{"time":"10:00-11:00","courts":["","","","","","Tennisschule"]},{"time":"11:00-12:00","courts":["","","","","","Tennisschule"]},{"time":"12:00-13:00","courts":["","","","","","Tennisschule"]},{"time":"13:00-14:00","courts":["JIC 1","JIC 1","Junioren- Treff","Junioren","Junioren","Junioren"]},{"time":"14:00-15:00","courts":["JIC 1","JIC 1 / Junioren-Treff","Junioren- Treff","Junioren","Junioren","Junioren"]},{"time":"15:00-16:00","courts":["JIC 1","JIC 1 / Junioren-Treff","Junioren- Treff","Junioren","Junioren","Junioren"]},{"time":"16:00-17:00","courts":["JIC 1","JIC 1 / Junioren-Treff","Junioren- Treff","Junioren","Junioren","Junioren"]},{"time":"17:00-18:00","courts":["JIC 1","JIC 1","","Junioren","Junioren","Junioren"]},{"time":"18:00-19:00","courts":["JIC 1","12h","12h","12h","TS (TCW)","Tennisschule"]},{"time":"19:00-20:00","courts":["NLC (Jasmin)","NLC (Jasmin)","NLC 35+ (Sämi)","NLC 35+ (Sämi)","TS (TCW)","Tennisschule"]},{"time":"20:00-21:00","courts":["12h","12h","NLC Simon","NLC 35+ (Sämi)","TS (TCW)","Tennisschule"]},{"time":"21:00-22:00","courts":["","12h","NLC Simon","NLC Simon","TS (TCW)","Tennisschule"]}],
+      "Donnerstag": [{"time":"08:00-09:00","courts":["","","","","","Tennisschule"]},{"time":"09:00-10:00","courts":["","","","","","Tennisschule"]},{"time":"10:00-11:00","courts":["Pajassen ?","Pajassen ?","Pajassen ?","","","Tennisschule"]},{"time":"11:00-12:00","courts":["Pajassen ?","Pajassen ?","Pajassen ?","","","Tennisschule"]},{"time":"12:00-13:00","courts":["","","","","","Tennisschule"]},{"time":"13:00-14:00","courts":["","","","","","Tennisschule"]},{"time":"14:00-15:00","courts":["","","","","","Tennisschule"]},{"time":"15:00-16:00","courts":["","","","","","Tennisschule"]},{"time":"16:00-17:00","courts":["","","","Junioren","Junioren","Tennisschule"]},{"time":"17:00-18:00","courts":["","","","Junioren","Junioren","Tennisschule"]},{"time":"18:00-19:00","courts":["12h","12h","12h","12h","TS (TCW)","Tennisschule"]},{"time":"19:00-20:00","courts":["30+ (Martina)","30+ (Martina)","30+ (Isabel)","30+ (Isabel)","TS (TCW)","Tennisschule"]},{"time":"20:00-21:00","courts":["35+ (2L)","35+ (2L)","35+ (1L)","35+ (1L)","TS (TCW)","Tennisschule"]},{"time":"21:00-22:00","courts":["35+ (2L)","12h","35+ (1L)","12h","TS (TCW)","Tennisschule"]}],
+      "Freitag": [{"time":"08:00-09:00","courts":["","","","","","Tennisschule"]},{"time":"09:00-10:00","courts":["","","","","","Tennisschule"]},{"time":"10:00-11:00","courts":["","","","","","Tennisschule"]},{"time":"11:00-12:00","courts":["","","","","","Tennisschule"]},{"time":"12:00-13:00","courts":["","","","","","Tennisschule"]},{"time":"13:00-14:00","courts":["","","","","","Tennisschule"]},{"time":"14:00-15:00","courts":["","","","","","Tennisschule"]},{"time":"15:00-16:00","courts":["","","","","","Tennisschule"]},{"time":"16:00-17:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"17:00-18:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"18:00-19:00","courts":["Freitagsdoppel","Freitagsdoppel","","","Tennisschule","Tennisschule"]},{"time":"19:00-20:00","courts":["Freitagsdoppel","Freitagsdoppel","","","Tennisschule","Tennisschule"]},{"time":"20:00-21:00","courts":["","","","","Tennisschule","Tennisschule"]},{"time":"21:00-22:00","courts":["","","","","Tennisschule","Tennisschule"]}]
+    };
+
+    const LEGEND = [
+      {"label":"Die IC-Trainings finden von MO-DO auf Plätzen 1, 2,3,4 statt (i.d.R. 19-22 Uhr)","text":""},
+      {"label":"2 Slots Damen/55+ Herren & 3 Slots Herren a 1h pro Team/Abend, 4 Spielende pro Platz","text":""},
+      {"label":"Unbenutzte Plätze werden durch Captains 24h freigegeben","text":""},
+      {"label":"Keine zusätzlichen Buchungen durch IC Spielende am jeweiligen Trainingsabend (17-22 Uhr)","text":""},
+      {"label":"12h","text":"Plätze durch IC-Captains 12h vorher buchbar (Mitte April - Mitte Juni)."}
+    ];
+
+    let teamData = { damen: [], herren: [] };
+    let matchData = [];
+    let matchStand = "22. März 2026";
+
+    const headerStandEl = document.getElementById("header-stand");
+    const viewButtons = [...document.querySelectorAll("[data-view]")];
+    const views = {
+      teams: document.getElementById("view-teams"),
+      training: document.getElementById("view-training"),
+      matches: document.getElementById("view-matches"),
+    };
+
+    const teamsEl = document.getElementById("teams-grid");
+    const teamsEmptyEl = document.getElementById("teams-empty");
+    const cardTpl = document.getElementById("card-template");
+    const btnDamen = document.getElementById("btn-damen");
+    const btnHerren = document.getElementById("btn-herren");
+
+    const planBody = document.getElementById("plan-body");
+    const legendList = document.getElementById("legend-list");
+    const dayButtons = [...document.querySelectorAll("[data-day]")];
+
+    const matchesBody = document.getElementById("matches-body");
+    const roundButtons = [...document.querySelectorAll("[data-round]")];
+
+    function setHeaderStand(value) {
+      headerStandEl.textContent = value ? `Stand ${value}` : "Stand 22. März 2026";
+    }
+
+    function activeViewFromHash() {
+      const key = window.location.hash.replace("#", "").trim();
+      return views[key] ? key : "teams";
+    }
+
+    function showView(viewKey, updateHash = true) {
+      Object.entries(views).forEach(([key, el]) => {
+        el.classList.toggle("active", key === viewKey);
+      });
+      viewButtons.forEach((button) => {
+        const active = button.dataset.view === viewKey;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", String(active));
+      });
+      if (updateHash) {
+        const targetHash = `#${viewKey}`;
+        if (window.location.hash !== targetHash) {
+          history.replaceState(null, "", targetHash);
+        }
+      }
+    }
+
+    function captainLabel(status) {
+      if (status === 1) return "Capt.";
+      if (status === 2) return "Capt. Stv.";
+      return "";
+    }
+
+    function sortedPlayers(players) {
+      const rank = { 1: 0, 2: 1, 0: 2 };
+      const rankingOrder = (value) => {
+        const s = String(value || "").trim().toUpperCase();
+        if (!s) return [9, 999];
+        if (/^N\d+$/.test(s)) return [0, Number(s.slice(1))];
+        if (/^R\d+$/.test(s)) return [1, Number(s.slice(1))];
+        return [8, 999];
+      };
+      return [...(players || [])].sort((a, b) => {
+        const ra = rank[a.captain_status] ?? 9;
+        const rb = rank[b.captain_status] ?? 9;
+        if (ra !== rb) return ra - rb;
+        const [ka1, ka2] = rankingOrder(a.klassierung);
+        const [kb1, kb2] = rankingOrder(b.klassierung);
+        if (ka1 !== kb1) return ka1 - kb1;
+        if (ka2 !== kb2) return ka2 - kb2;
+        return String(a.name || "").localeCompare(String(b.name || ""), "de", { sensitivity: "base" });
+      });
+    }
+
+    function renderPlayer(player) {
+      const li = document.createElement("li");
+      const nameEl = document.createElement("span");
+      nameEl.className = "player-link";
+      const rankEl = document.createElement("span");
+      rankEl.className = "player-rank";
+      const status = Number(player.captain_status || 0);
+      const name = String(player.name || "").trim();
+      const klassierung = String(player.klassierung || "").trim().toUpperCase();
+      const rawUrl = String(player.myTennisID || "").trim();
+      const label = captainLabel(status);
+
+      if (label) {
+        const strong = document.createElement("strong");
+        strong.textContent = `${name} (${label})`;
+        nameEl.appendChild(strong);
+      } else {
+        nameEl.textContent = name;
+      }
+      rankEl.textContent = klassierung;
+
+      nameEl.addEventListener("click", () => {
+        if (!rawUrl) return;
+        const url = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+        window.open(url, "_blank", "noopener,noreferrer");
+      });
+
+      li.append(nameEl, rankEl);
+      return li;
+    }
+
+    function renderTeams(key) {
+      teamsEl.innerHTML = "";
+      const list = teamData[key] || [];
+
+      list.forEach((team) => {
+        const node = cardTpl.content.firstElementChild.cloneNode(true);
+        node.querySelector(".card-title").textContent = team.title;
+        node.querySelector(".meta-teamziel").textContent = `Teamziel: ${team.teamziel || "-"}`;
+        node.querySelector(".meta-training").textContent = `Trainingstag: ${team.trainingstag || "-"}`;
+
+        const ul = node.querySelector(".players");
+        sortedPlayers(team.players || []).forEach((player) => ul.appendChild(renderPlayer(player)));
+        teamsEl.appendChild(node);
+      });
+
+      teamsEmptyEl.style.display = list.length ? "none" : "block";
+      btnDamen.classList.toggle("active", key === "damen");
+      btnHerren.classList.toggle("active", key === "herren");
+      btnDamen.setAttribute("aria-selected", String(key === "damen"));
+      btnHerren.setAttribute("aria-selected", String(key === "herren"));
+    }
+
+    function renderTrainingDay(day) {
+      const rows = (PLAN_DATA[day] || []).filter((row) => {
+        const start = Number(String(row.time || "").slice(0, 2));
+        return Number.isFinite(start) && start >= 18 && start < 22;
+      });
+      planBody.innerHTML = "";
+
+      rows.forEach((row) => {
+        const tr = document.createElement("tr");
+        const tdTime = document.createElement("td");
+        tdTime.className = "time";
+        tdTime.textContent = row.time;
+        tr.appendChild(tdTime);
+
+        row.courts.forEach((court) => {
+          const td = document.createElement("td");
+          if (court) {
+            td.textContent = court;
+          } else {
+            td.className = "muted";
+            td.textContent = "-";
+          }
+          tr.appendChild(td);
+        });
+
+        planBody.appendChild(tr);
+      });
+
+      dayButtons.forEach((btn) => {
+        const active = btn.dataset.day === day;
+        btn.classList.toggle("active", active);
+        btn.setAttribute("aria-selected", String(active));
+      });
+    }
+
+    function renderLegend() {
+      legendList.innerHTML = "";
+      LEGEND.forEach((entry) => {
+        const li = document.createElement("li");
+        if (entry.text) {
+          li.innerHTML = `<strong>${entry.label}:</strong> ${entry.text}`;
+        } else {
+          li.textContent = entry.label;
+        }
+        legendList.appendChild(li);
+      });
+    }
+
+    function renderClubCell(value) {
+      const cell = document.createElement("td");
+      if (value === "Waidberg ZH") {
+        const strong = document.createElement("strong");
+        strong.className = "club-name";
+        strong.textContent = value;
+        cell.appendChild(strong);
+      } else {
+        cell.textContent = value;
+      }
+      return cell;
+    }
+
+    function renderMatches(activeRound = "1") {
+      let lastDate = "";
+      matchesBody.innerHTML = "";
+      const list = matchData.filter((match) => match.runde === activeRound);
+
+      list.forEach((match) => {
+        const tr = document.createElement("tr");
+        const dateCell = document.createElement("td");
+        dateCell.className = "col-date";
+        if (match.date !== lastDate) {
+          const span = document.createElement("span");
+          span.className = "date-label";
+          span.textContent = match.date;
+          dateCell.appendChild(span);
+          lastDate = match.date;
+        } else {
+          dateCell.className = "col-date muted";
+          dateCell.textContent = " ";
+        }
+
+        const timeCell = document.createElement("td");
+        timeCell.className = "col-time";
+        timeCell.textContent = match.time || "-";
+
+        const ligaCell = document.createElement("td");
+        ligaCell.textContent = match.liga;
+
+        tr.append(dateCell, timeCell, ligaCell, renderClubCell(match.home), renderClubCell(match.away));
+        matchesBody.appendChild(tr);
+      });
+
+      roundButtons.forEach((button) => {
+        const active = button.dataset.round === activeRound;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", String(active));
+      });
+    }
+
+    async function loadTeams() {
+      const res = await fetch("/api/teams", { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      teamData = await res.json();
+      renderTeams("damen");
+    }
+
+    async function loadMatches() {
+      const response = await fetch("./matches.json", { cache: "no-store" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json();
+      matchData = Array.isArray(payload.matches) ? payload.matches : [];
+      matchStand = payload.updated_at || matchStand;
+      setHeaderStand(matchStand);
+      renderMatches("1");
+    }
+
+    btnDamen.addEventListener("click", () => renderTeams("damen"));
+    btnHerren.addEventListener("click", () => renderTeams("herren"));
+
+    dayButtons.forEach((btn) => {
+      btn.addEventListener("click", () => renderTrainingDay(btn.dataset.day));
+    });
+
+    roundButtons.forEach((button) => {
+      button.addEventListener("click", () => renderMatches(button.dataset.round));
+    });
+
+    viewButtons.forEach((button) => {
+      button.addEventListener("click", () => showView(button.dataset.view));
+    });
+
+    window.addEventListener("hashchange", () => showView(activeViewFromHash(), false));
+
+    renderLegend();
+    renderTrainingDay("Montag");
+    showView(activeViewFromHash(), false);
+
+    loadTeams().catch(() => {
+      teamsEl.innerHTML = "";
+      teamsEmptyEl.style.display = "block";
+      teamsEmptyEl.textContent = "Fehler beim Laden der Teamdaten aus der Datenbank.";
+    });
+
+    loadMatches().catch(() => {
+      matchesBody.innerHTML = '<tr><td colspan="5">Fehler beim Laden der Spieltermine.</td></tr>';
+    });
+  </script>
+</body>
+</html>

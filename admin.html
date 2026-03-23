@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interclub Admin | TC Waidberg</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --blue-900: #172b7b;
+      --blue-800: #25348b;
+      --green-600: #5fa637;
+      --text: #172033;
+      --muted: #57627b;
+      --line: #d3ddf1;
+      --surface: #ffffff;
+      --shadow: 0 10px 24px rgba(23, 43, 123, 0.12);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Manrope", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: #f4f7fc;
+      color: var(--text);
+    }
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+    }
+    .hero, .panel {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .hero h1 {
+      margin: 0;
+      color: var(--blue-900);
+      font-size: 1.5rem;
+    }
+    .hero p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: .95rem;
+    }
+    .panel h2 {
+      margin: 0 0 12px;
+      color: var(--blue-900);
+      font-size: 1.1rem;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .msg {
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: .9rem;
+      border: 1px solid var(--line);
+      background: #fafdff;
+      color: var(--muted);
+    }
+    .msg.error { color: #8a1f2b; background: #fff4f5; border-color: #f4c7cd; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .table-wrap { overflow-x: auto; }
+    th {
+      text-align: left;
+      background: var(--blue-800);
+      color: #fff;
+      padding: 10px;
+      font-size: .85rem;
+    }
+    td {
+      padding: 8px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+      font-size: .9rem;
+    }
+    tr:last-child td { border-bottom: 0; }
+    input, select {
+      width: 100%;
+      border: 1px solid #c8d4ef;
+      border-radius: 10px;
+      padding: 8px;
+      font: inherit;
+      background: #fff;
+    }
+    .act {
+      display: flex;
+      gap: 6px;
+      min-width: 130px;
+    }
+    button {
+      border: 0;
+      border-radius: 9px;
+      padding: 8px 10px;
+      font: inherit;
+      font-size: .85rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: linear-gradient(135deg, var(--blue-800), var(--green-600));
+    }
+    button.alt { background: #536487; }
+    button.danger { background: #b3354b; }
+    @media (max-width: 680px) {
+      .page { padding: 10px; }
+      .hero h1 { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <h1>Interclub Admin</h1>
+      <p>Datenbearbeitung für Teams und Spieler. Felder <strong>ID</strong> und <strong>created_at</strong> sind bewusst nicht editierbar.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Teams</h2>
+      <div class="toolbar">
+        <button id="refreshTeams" class="alt">Neu laden</button>
+        <span id="teamMsg" class="msg">Bereit</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>Gender</th>
+              <th>Kategorie</th>
+              <th>Liga</th>
+              <th>Teamziel</th>
+              <th>Trainingstag</th>
+              <th>Aktion</th>
+            </tr>
+          </thead>
+          <tbody id="teamsBody"></tbody>
+          <tfoot>
+            <tr>
+              <td>Neues Team</td>
+              <td>
+                <select id="newTeamGender">
+                  <option>Damen</option>
+                  <option>Herren</option>
+                </select>
+              </td>
+              <td><input id="newTeamCategory" placeholder="Aktiv / 30+ / 35+ ..." /></td>
+              <td><input id="newTeamLiga" placeholder="1. Liga / NLC ..." /></td>
+              <td><input id="newTeamZiel" placeholder="Teamziel" /></td>
+              <td><input id="newTeamTag" placeholder="Montag ..." /></td>
+              <td><button id="addTeam">Anlegen</button></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Spieler</h2>
+      <div class="toolbar">
+        <button id="refreshPlayers" class="alt">Neu laden</button>
+        <span id="playerMsg" class="msg">Bereit</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Klassierung</th>
+              <th>Name</th>
+              <th>myTennisID</th>
+              <th>Team</th>
+              <th>Captain Status</th>
+              <th>Aktion</th>
+            </tr>
+          </thead>
+          <tbody id="playersBody"></tbody>
+          <tfoot>
+            <tr>
+              <td><input id="newPlayerKlassierung" placeholder="z.B. R5 / N3" /></td>
+              <td><input id="newPlayerName" placeholder="Spielername" /></td>
+              <td><input id="newPlayerMyTennisID" placeholder="z.B. A12345" /></td>
+              <td><select id="newPlayerTeam"></select></td>
+              <td>
+                <select id="newPlayerCaptain">
+                  <option value="0">0 - Kein Captain</option>
+                  <option value="1">1 - Captain</option>
+                  <option value="2">2 - Capt. Stv.</option>
+                </select>
+              </td>
+              <td><button id="addPlayer">Anlegen</button></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const teamsBody = document.getElementById('teamsBody');
+    const playersBody = document.getElementById('playersBody');
+    const teamMsg = document.getElementById('teamMsg');
+    const playerMsg = document.getElementById('playerMsg');
+    const newPlayerTeam = document.getElementById('newPlayerTeam');
+    let teams = [];
+    let players = [];
+
+    function setMsg(el, text, isError = false) {
+      el.textContent = text;
+      el.classList.toggle('error', isError);
+    }
+
+    async function api(url, method = 'GET', body = null) {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : null,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    }
+
+    function teamOptions(selectedId) {
+      return teams.map(t => {
+        const sel = Number(selectedId) === Number(t.id) ? 'selected' : '';
+        return `<option value="${t.id}" ${sel}>${t.display_name}</option>`;
+      }).join('');
+    }
+
+    function captainOptions(selected) {
+      const s = Number(selected);
+      return [
+        { v: 0, l: '0 - Kein Captain' },
+        { v: 1, l: '1 - Captain' },
+        { v: 2, l: '2 - Capt. Stv.' },
+      ].map(o => `<option value="${o.v}" ${o.v === s ? 'selected' : ''}>${o.l}</option>`).join('');
+    }
+
+    function renderTeams() {
+      teamsBody.innerHTML = '';
+      for (const t of teams) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${t.display_name}</td>
+          <td>
+            <select data-f="gender">
+              <option ${t.gender === 'Damen' ? 'selected' : ''}>Damen</option>
+              <option ${t.gender === 'Herren' ? 'selected' : ''}>Herren</option>
+            </select>
+          </td>
+          <td><input data-f="category" value="${t.category}" /></td>
+          <td><input data-f="liga" value="${t.liga}" /></td>
+          <td><input data-f="teamziel" value="${t.teamziel}" /></td>
+          <td><input data-f="trainingstag" value="${t.trainingstag}" /></td>
+          <td class="act">
+            <button data-a="save">Speichern</button>
+            <button data-a="del" class="danger">Löschen</button>
+          </td>
+        `;
+
+        tr.querySelector('[data-a="save"]').addEventListener('click', async () => {
+          try {
+            const payload = {
+              gender: tr.querySelector('[data-f="gender"]').value,
+              category: tr.querySelector('[data-f="category"]').value,
+              liga: tr.querySelector('[data-f="liga"]').value,
+              teamziel: tr.querySelector('[data-f="teamziel"]').value,
+              trainingstag: tr.querySelector('[data-f="trainingstag"]').value,
+            };
+            await api(`/api/teams/${t.id}`, 'PUT', payload);
+            setMsg(teamMsg, 'Team gespeichert');
+            await loadAll();
+          } catch (e) {
+            setMsg(teamMsg, e.message, true);
+          }
+        });
+
+        tr.querySelector('[data-a="del"]').addEventListener('click', async () => {
+          if (!confirm('Team wirklich löschen? Zugehörige Spieler werden mitgelöscht.')) return;
+          try {
+            await api(`/api/teams/${t.id}`, 'DELETE');
+            setMsg(teamMsg, 'Team gelöscht');
+            await loadAll();
+          } catch (e) {
+            setMsg(teamMsg, e.message, true);
+          }
+        });
+
+        teamsBody.appendChild(tr);
+      }
+      newPlayerTeam.innerHTML = teamOptions();
+    }
+
+    function renderPlayers() {
+      playersBody.innerHTML = '';
+      for (const p of players) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><input data-f="klassierung" value="${p.klassierung || ''}" /></td>
+          <td><input data-f="name" value="${p.name}" /></td>
+          <td><input data-f="myTennisID" value="${p.myTennisID || ''}" /></td>
+          <td><select data-f="team_id">${teamOptions(p.team_id)}</select></td>
+          <td><select data-f="captain_status">${captainOptions(p.captain_status)}</select></td>
+          <td class="act">
+            <button data-a="save">Speichern</button>
+            <button data-a="del" class="danger">Löschen</button>
+          </td>
+        `;
+
+        tr.querySelector('[data-a="save"]').addEventListener('click', async () => {
+          try {
+            const payload = {
+              klassierung: tr.querySelector('[data-f="klassierung"]').value,
+              name: tr.querySelector('[data-f="name"]').value,
+              myTennisID: tr.querySelector('[data-f="myTennisID"]').value,
+              team_id: Number(tr.querySelector('[data-f="team_id"]').value),
+              captain_status: Number(tr.querySelector('[data-f="captain_status"]').value),
+            };
+            await api(`/api/players/${p.id}`, 'PUT', payload);
+            setMsg(playerMsg, 'Spieler gespeichert');
+            await loadAll();
+          } catch (e) {
+            setMsg(playerMsg, e.message, true);
+          }
+        });
+
+        tr.querySelector('[data-a="del"]').addEventListener('click', async () => {
+          if (!confirm('Spieler wirklich löschen?')) return;
+          try {
+            await api(`/api/players/${p.id}`, 'DELETE');
+            setMsg(playerMsg, 'Spieler gelöscht');
+            await loadAll();
+          } catch (e) {
+            setMsg(playerMsg, e.message, true);
+          }
+        });
+
+        playersBody.appendChild(tr);
+      }
+    }
+
+    async function loadAll() {
+      const t = await api('/api/teams');
+      teams = t.items || [];
+      const p = await api('/api/players');
+      players = p.items || [];
+      renderTeams();
+      renderPlayers();
+    }
+
+    document.getElementById('refreshTeams').addEventListener('click', loadAll);
+    document.getElementById('refreshPlayers').addEventListener('click', loadAll);
+
+    document.getElementById('addTeam').addEventListener('click', async () => {
+      try {
+        const payload = {
+          gender: document.getElementById('newTeamGender').value,
+          category: document.getElementById('newTeamCategory').value,
+          liga: document.getElementById('newTeamLiga').value,
+          teamziel: document.getElementById('newTeamZiel').value,
+          trainingstag: document.getElementById('newTeamTag').value,
+        };
+        await api('/api/teams', 'POST', payload);
+        setMsg(teamMsg, 'Team angelegt');
+        await loadAll();
+      } catch (e) {
+        setMsg(teamMsg, e.message, true);
+      }
+    });
+
+    document.getElementById('addPlayer').addEventListener('click', async () => {
+      try {
+        const payload = {
+          klassierung: document.getElementById('newPlayerKlassierung').value,
+          name: document.getElementById('newPlayerName').value,
+          myTennisID: document.getElementById('newPlayerMyTennisID').value,
+          team_id: Number(document.getElementById('newPlayerTeam').value),
+          captain_status: Number(document.getElementById('newPlayerCaptain').value),
+        };
+        await api('/api/players', 'POST', payload);
+        setMsg(playerMsg, 'Spieler angelegt');
+        await loadAll();
+      } catch (e) {
+        setMsg(playerMsg, e.message, true);
+      }
+    });
+
+    loadAll().catch((e) => {
+      setMsg(teamMsg, e.message, true);
+      setMsg(playerMsg, e.message, true);
+    });
+  </script>
+</body>
+</html>
