@@ -3,6 +3,7 @@ import json
 import os
 import re
 import sqlite3
+import subprocess
 import unicodedata
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -14,6 +15,8 @@ WEB_DIR = BASE_DIR
 DB_PATH = Path(os.environ.get("IC_DB_PATH", str(BASE_DIR / "ic_teams.sqlite")))
 HOST = os.environ.get("IC_ADMIN_HOST", "0.0.0.0")
 PORT = int(os.environ.get("IC_ADMIN_PORT", "8081"))
+UPDATE_KLASSIERUNG_SCRIPT = BASE_DIR / "update_klassierung_from_mytennis.py"
+SEARCH_SCRIPT = BASE_DIR / "mytennis_player_search.py"
 
 SEARCH_URL = "https://high-scalability.microservices.swisstennis.ch/main-index-query"
 PLAYER_URL = "https://www.mytennis.ch/de/spieler/{player_id}"
@@ -30,6 +33,25 @@ def db_connect():
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys=ON")
     return conn
+
+
+def ensure_schema():
+    conn = db_connect()
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ranking_changes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            player_id INTEGER NOT NULL,
+            player_name TEXT NOT NULL,
+            myTennisID TEXT NOT NULL DEFAULT '',
+            old_klassierung TEXT NOT NULL DEFAULT '',
+            new_klassierung TEXT NOT NULL DEFAULT '',
+            changed_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
 
 
 def search_players(vorname: str = "", nachname: str = "", limit: int = 50):
@@ -300,6 +322,35 @@ def list_players():
     return out
 
 
+def list_ranking_changes():
+    ensure_schema()
+    conn = db_connect()
+    cur = conn.cursor()
+    rows = cur.execute(
+        """
+        SELECT id, player_id, player_name, myTennisID, old_klassierung, new_klassierung, changed_at
+        FROM ranking_changes
+        ORDER BY datetime(changed_at) DESC, id DESC
+        """
+    ).fetchall()
+    conn.close()
+
+    out = []
+    for r in rows:
+        out.append(
+            {
+                "id": r["id"],
+                "player_id": r["player_id"],
+                "player_name": r["player_name"],
+                "myTennisID": r["myTennisID"] or "",
+                "old_klassierung": r["old_klassierung"] or "",
+                "new_klassierung": r["new_klassierung"] or "",
+                "changed_at": r["changed_at"],
+            }
+        )
+    return out
+
+
 def validate_team(data):
     required = ["gender", "category", "liga", "teamziel", "trainingstag"]
     for key in required:
@@ -328,6 +379,38 @@ def validate_player(data):
     return None
 
 
+def validate_ranking_change(data):
+    if not str(data.get("player_name", "")).strip():
+        return "Feld 'player_name' ist erforderlich."
+    if not str(data.get("changed_at", "")).strip():
+        return "Feld 'changed_at' ist erforderlich."
+    return None
+
+
+def run_klassierung_update() -> dict:
+    if not UPDATE_KLASSIERUNG_SCRIPT.exists():
+        raise RuntimeError(f"Script nicht gefunden: {UPDATE_KLASSIERUNG_SCRIPT}")
+    if not SEARCH_SCRIPT.exists():
+        raise RuntimeError(f"Suchscript nicht gefunden: {SEARCH_SCRIPT}")
+
+    cmd = [
+        "python3",
+        str(UPDATE_KLASSIERUNG_SCRIPT),
+        "--local-db",
+        "--db-path",
+        str(DB_PATH),
+        "--search-script",
+        str(SEARCH_SCRIPT),
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    output = (proc.stdout or "").strip()
+    if proc.stderr:
+        output = f"{output}\n{proc.stderr.strip()}".strip()
+    if proc.returncode != 0:
+        raise RuntimeError(output or f"Script fehlgeschlagen (Exit {proc.returncode})")
+    return {"ok": True, "output": output or "Keine Ausgabe"}
+
+
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path
@@ -340,6 +423,9 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/players":
             return json_response(self, 200, {"items": list_players()})
+
+        if path == "/api/ranking-changes":
+            return json_response(self, 200, {"items": list_ranking_changes()})
 
         if path in ("/", "/admin", "/admin/"):
             html = (WEB_DIR / "admin.html").read_bytes()
@@ -417,6 +503,12 @@ class Handler(BaseHTTPRequestHandler):
             if not str(data.get("myTennisID", "")).strip():
                 enrich_player(int(player_id))
             return json_response(self, 201, {"ok": True})
+
+        if path == "/api/actions/update-klassierung":
+            try:
+                return json_response(self, 200, run_klassierung_update())
+            except Exception as exc:
+                return json_response(self, 500, {"error": str(exc)})
 
         return json_response(self, 404, {"error": "Not Found"})
 
@@ -513,6 +605,36 @@ class Handler(BaseHTTPRequestHandler):
                 enrich_player(int(player_id))
             return json_response(self, 200, {"ok": True})
 
+        if path.startswith("/api/ranking-changes/"):
+            change_id = path.rsplit("/", 1)[-1]
+            if not change_id.isdigit():
+                return json_response(self, 400, {"error": "Ungültige Änderungs-ID"})
+            data = read_json(self)
+            err = validate_ranking_change(data)
+            if err:
+                return json_response(self, 400, {"error": err})
+
+            conn = db_connect()
+            cur = conn.cursor()
+            cur.execute(
+                """
+                UPDATE ranking_changes
+                SET player_name=?, myTennisID=?, old_klassierung=?, new_klassierung=?, changed_at=?
+                WHERE id=?
+                """,
+                (
+                    str(data.get("player_name", "")).strip(),
+                    str(data.get("myTennisID", "")).strip(),
+                    str(data.get("old_klassierung", "")).strip().upper(),
+                    str(data.get("new_klassierung", "")).strip().upper(),
+                    str(data.get("changed_at", "")).strip(),
+                    int(change_id),
+                ),
+            )
+            conn.commit()
+            conn.close()
+            return json_response(self, 200, {"ok": True})
+
         return json_response(self, 404, {"error": "Not Found"})
 
     def do_DELETE(self):
@@ -538,6 +660,16 @@ class Handler(BaseHTTPRequestHandler):
             conn.close()
             return json_response(self, 200, {"ok": True})
 
+        if path.startswith("/api/ranking-changes/"):
+            change_id = path.rsplit("/", 1)[-1]
+            if not change_id.isdigit():
+                return json_response(self, 400, {"error": "Ungültige Änderungs-ID"})
+            conn = db_connect()
+            conn.execute("DELETE FROM ranking_changes WHERE id=?", (int(change_id),))
+            conn.commit()
+            conn.close()
+            return json_response(self, 200, {"ok": True})
+
         return json_response(self, 404, {"error": "Not Found"})
 
     def log_message(self, fmt, *args):
@@ -545,6 +677,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    ensure_schema()
     print(f"Admin UI on {HOST}:{PORT}, db={DB_PATH}")
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     server.serve_forever()

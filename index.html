@@ -21,6 +21,7 @@
             <button class="active" type="button" data-view="teams">Teams</button>
             <button type="button" data-view="training">Trainingsplan</button>
             <button type="button" data-view="matches">Spieltermine</button>
+            <button type="button" data-view="changes">Klassierungsänderungen</button>
           </div>
         </div>
       </div>
@@ -103,6 +104,25 @@
           </table>
         </div>
       </section>
+    </section>
+
+    <section id="view-changes" class="view" aria-live="polite">
+      <section class="panel">
+        <div class="table-wrap">
+          <table class="changes-table">
+            <thead>
+              <tr>
+                <th>Spieler</th>
+                <th>Klassierung neu</th>
+                <th>Klassierung alt</th>
+                <th>Datum</th>
+              </tr>
+            </thead>
+            <tbody id="changes-body"></tbody>
+          </table>
+        </div>
+      </section>
+      <div id="changes-empty" class="empty">Keine Klassierungsänderungen vorhanden.</div>
     </section>
   </main>
 

@@ -26,4 +26,6 @@ docker run --rm \
     python3 /data/import_clubresult.py /data/ClubResult.pdf /data/public/matches.json
   "
 
+rm -f "${BASE_DIR}/matches.json"
+
 echo "Updated: ${JSON_PATH}"

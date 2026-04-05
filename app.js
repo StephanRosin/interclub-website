@@ -16,6 +16,7 @@ const LEGEND = [
 
 let teamData = { damen: [], herren: [] };
 let matchData = [];
+let rankingChangeData = [];
 let matchStand = "22. März 2026";
 
 const headerStandEl = document.getElementById("header-stand");
@@ -24,6 +25,7 @@ const views = {
   teams: document.getElementById("view-teams"),
   training: document.getElementById("view-training"),
   matches: document.getElementById("view-matches"),
+  changes: document.getElementById("view-changes"),
 };
 
 const teamsEl = document.getElementById("teams-grid");
@@ -38,6 +40,8 @@ const dayButtons = [...document.querySelectorAll("[data-day]")];
 
 const matchesBody = document.getElementById("matches-body");
 const roundButtons = [...document.querySelectorAll("[data-round]")];
+const changesBody = document.getElementById("changes-body");
+const changesEmptyEl = document.getElementById("changes-empty");
 
 function setHeaderStand(value) {
   headerStandEl.textContent = value ? `Stand ${value}` : "Stand 22. März 2026";
@@ -244,6 +248,77 @@ function renderMatches(activeRound = "1") {
   });
 }
 
+function rankingOrder(value) {
+  const s = String(value || "").trim().toUpperCase();
+  if (!s) return [9, 999];
+  if (/^N\d+$/.test(s)) return [0, Number(s.slice(1))];
+  if (/^R\d+$/.test(s)) return [1, Number(s.slice(1))];
+  return [8, 999];
+}
+
+function compareRankings(oldValue, newValue) {
+  const [oldGroup, oldNum] = rankingOrder(oldValue);
+  const [newGroup, newNum] = rankingOrder(newValue);
+  if (newGroup < oldGroup) return "up";
+  if (newGroup > oldGroup) return "down";
+  if (newNum < oldNum) return "up";
+  if (newNum > oldNum) return "down";
+  return "flat";
+}
+
+function formatChangeDate(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "-";
+  const date = new Date(raw.replace(" ", "T"));
+  if (Number.isNaN(date.getTime())) return raw.split(" ")[0] || raw;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
+}
+
+function renderRankingChanges() {
+  changesBody.innerHTML = "";
+  const list = rankingChangeData || [];
+
+  list.forEach((item) => {
+    const tr = document.createElement("tr");
+    const playerCell = document.createElement("td");
+    const oldCell = document.createElement("td");
+    const newCell = document.createElement("td");
+    const dateCell = document.createElement("td");
+    const state = compareRankings(item.old_klassierung, item.new_klassierung);
+
+    const wrap = document.createElement("div");
+    wrap.className = "change-player";
+
+    const arrow = document.createElement("span");
+    arrow.className = `change-arrow ${state}`;
+    arrow.textContent = state === "up" ? "↑" : state === "down" ? "↓" : "•";
+
+    if (item.myTennisID) {
+      const link = document.createElement("a");
+      link.className = "change-link";
+      link.href = item.myTennisID;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = item.player_name;
+      wrap.append(arrow, link);
+    } else {
+      const name = document.createElement("span");
+      name.textContent = item.player_name;
+      wrap.append(arrow, name);
+    }
+
+    oldCell.textContent = item.old_klassierung || "-";
+    newCell.textContent = item.new_klassierung || "-";
+    dateCell.textContent = formatChangeDate(item.changed_at);
+    playerCell.appendChild(wrap);
+    tr.append(playerCell, newCell, oldCell, dateCell);
+    changesBody.appendChild(tr);
+  });
+
+  changesEmptyEl.style.display = list.length ? "none" : "block";
+}
+
 async function loadTeams() {
   teamData = await fetchJson("/api/teams");
   renderTeams("damen");
@@ -255,6 +330,12 @@ async function loadMatches() {
   matchStand = payload.updated_at || matchStand;
   setHeaderStand(matchStand);
   renderMatches("1");
+}
+
+async function loadRankingChanges() {
+  const payload = await fetchJson("/api/ranking-changes");
+  rankingChangeData = Array.isArray(payload.items) ? payload.items : [];
+  renderRankingChanges();
 }
 
 async function fetchJson(url) {
@@ -305,4 +386,9 @@ loadTeams().catch(() => {
 
 loadMatches().catch(() => {
   matchesBody.innerHTML = '<tr><td colspan="5">Fehler beim Laden der Spieltermine.</td></tr>';
+});
+
+loadRankingChanges().catch(() => {
+  changesBody.innerHTML = '<tr><td colspan="4">Fehler beim Laden der Klassierungsänderungen.</td></tr>';
+  changesEmptyEl.style.display = "none";
 });

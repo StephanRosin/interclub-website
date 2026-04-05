@@ -6,7 +6,7 @@ Sucht Spieler über die swisstennis Microservices API.
 Kein Login erforderlich!
 
 Installation:
-    pip install requests --break-system-packages
+    Keine Zusatzpakete erforderlich
 
 Verwendung:
     python mytennis_player_search.py
@@ -17,8 +17,7 @@ Verwendung:
 import argparse
 import json
 import sys
-
-import requests
+from urllib.request import Request, urlopen
 
 # ---------------------------------------------------------------------------
 # Konfiguration
@@ -39,7 +38,7 @@ HEADERS = {
 # Suche
 # ---------------------------------------------------------------------------
 
-def search_players(vorname: str = "", nachname: str = "", limit: int = 50) -> list[dict]:
+def search_players(vorname: str = "", nachname: str = "", limit: int = 5) -> list[dict]:
     keyword = f"{vorname} {nachname}".strip()
 
     payload = {
@@ -48,20 +47,29 @@ def search_players(vorname: str = "", nachname: str = "", limit: int = 50) -> li
         "limit": limit,
     }
 
+    req = Request(
+        SEARCH_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers=HEADERS,
+        method="POST",
+    )
+
     try:
-        r = requests.post(SEARCH_URL, json=payload, headers=HEADERS, timeout=10)
-        r.raise_for_status()
-    except requests.exceptions.RequestException as e:
+        with urlopen(req, timeout=10) as resp:
+            body = resp.read().decode("utf-8")
+    except Exception as e:
         print(f"❌ API-Fehler: {e}")
         sys.exit(1)
 
-    hits = r.json().get("hits", {}).get("hits", [])
+    hits = json.loads(body).get("hits", {}).get("hits", [])
 
     players = []
     for hit in hits:
         src = hit.get("_source", {})
+
         if src.get("type") != "player":
             continue
+        print(hit)
         players.append({
             "id":             str(src.get("rawId", "")),
             "name":           src.get("title", "–"),

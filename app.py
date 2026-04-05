@@ -4,6 +4,7 @@ import os
 import sqlite3
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from datetime import datetime
 from urllib.parse import urlparse
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -140,6 +141,67 @@ def load_teams() -> dict:
     return out
 
 
+def load_ranking_changes() -> list[dict]:
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    table_exists = cur.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='ranking_changes'"
+    ).fetchone()
+    if not table_exists:
+        conn.close()
+        return []
+
+    rows = cur.execute(
+        """
+        SELECT id, player_id, player_name, myTennisID, old_klassierung, new_klassierung, changed_at
+        FROM ranking_changes
+        """
+    ).fetchall()
+    conn.close()
+
+    def ranking_order(value: str) -> tuple[int, int]:
+        s = (value or "").strip().upper()
+        if not s:
+            return (9, 999)
+        if s.startswith("N") and s[1:].isdigit():
+            return (0, int(s[1:]))
+        if s.startswith("R") and s[1:].isdigit():
+            return (1, int(s[1:]))
+        return (8, 999)
+
+    def month_key(value: str) -> str:
+        raw = (value or "").strip()
+        if not raw:
+            return ""
+        normalized = raw.replace("T", " ")
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+            try:
+                return datetime.strptime(normalized, fmt).strftime("%Y-%m")
+            except ValueError:
+                continue
+        return normalized.split(" ", 1)[0][:7]
+
+    items = [
+        {
+            "id": row["id"],
+            "player_id": row["player_id"],
+            "player_name": row["player_name"],
+            "myTennisID": row["myTennisID"] or "",
+            "old_klassierung": row["old_klassierung"] or "",
+            "new_klassierung": row["new_klassierung"] or "",
+            "changed_at": row["changed_at"] or "",
+        }
+        for row in rows
+    ]
+
+    items.sort(key=lambda item: item["player_name"].casefold())
+    items.sort(key=lambda item: ranking_order(item["new_klassierung"]))
+    items.sort(key=lambda item: month_key(item["changed_at"]), reverse=True)
+    return items
+
+
 class Handler(BaseHTTPRequestHandler):
     def _send(self, status: int, body: bytes, ctype: str) -> None:
         self.send_response(status)
@@ -166,6 +228,16 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, payload, "application/json; charset=utf-8")
             except Exception as exc:
                 print(f"/api/teams failed: {exc}")
+                payload = json.dumps({"error": "Interner Serverfehler"}).encode("utf-8")
+                self._send(500, payload, "application/json; charset=utf-8")
+            return
+
+        if path == "/api/ranking-changes":
+            try:
+                payload = json.dumps({"items": load_ranking_changes()}, ensure_ascii=False).encode("utf-8")
+                self._send(200, payload, "application/json; charset=utf-8")
+            except Exception as exc:
+                print(f"/api/ranking-changes failed: {exc}")
                 payload = json.dumps({"error": "Interner Serverfehler"}).encode("utf-8")
                 self._send(500, payload, "application/json; charset=utf-8")
             return

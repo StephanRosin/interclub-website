@@ -67,6 +67,31 @@
       align-items: center;
       margin-bottom: 10px;
     }
+    .view-switch {
+      display: inline-flex;
+      gap: 6px;
+      padding: 5px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      width: fit-content;
+    }
+    .view-switch button {
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+    }
+    .view-switch button.active {
+      background: linear-gradient(135deg, var(--blue-800), var(--green-600));
+      color: #fff;
+    }
+    .view-panel {
+      display: none;
+    }
+    .view-panel.active {
+      display: block;
+    }
     .msg {
       padding: 8px 10px;
       border-radius: 10px;
@@ -126,6 +151,13 @@
     }
     button.alt { background: #536487; }
     button.danger { background: #b3354b; }
+    .player-link {
+      color: var(--blue-900);
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .player-link:hover { text-decoration: underline; }
+    .link-cell { display: block; }
     @media (max-width: 680px) {
       .page { padding: 10px; }
       .hero h1 { font-size: 1.2rem; }
@@ -137,9 +169,14 @@
     <section class="hero">
       <h1>Interclub Admin</h1>
       <p>Datenbearbeitung für Teams und Spieler. Felder <strong>ID</strong> und <strong>created_at</strong> sind bewusst nicht editierbar.</p>
+      <div class="view-switch" role="tablist" aria-label="Admin Bereiche">
+        <button class="active" type="button" data-view="teams">Teams</button>
+        <button type="button" data-view="players">Spieler</button>
+        <button type="button" data-view="changes">Klassierungsänderungen</button>
+      </div>
     </section>
 
-    <section class="panel">
+    <section id="view-teams" class="panel view-panel active">
       <h2>Teams</h2>
       <div class="toolbar">
         <button id="refreshTeams" class="alt">Neu laden</button>
@@ -179,10 +216,11 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section id="view-players" class="panel view-panel">
       <h2>Spieler</h2>
       <div class="toolbar">
         <button id="refreshPlayers" class="alt">Neu laden</button>
+        <button id="runRankUpdate">Klassierungen aktualisieren</button>
         <span id="playerMsg" class="msg">Bereit</span>
       </div>
       <div class="table-wrap">
@@ -217,16 +255,47 @@
         </table>
       </div>
     </section>
+
+    <section id="view-changes" class="panel view-panel">
+      <h2>Klassierungsänderungen</h2>
+      <div class="toolbar">
+        <button id="refreshChanges" class="alt">Neu laden</button>
+        <span id="changeMsg" class="msg">Bereit</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Spieler</th>
+              <th>Klassierung alt</th>
+              <th>Klassierung neu</th>
+              <th>Datum</th>
+              <th>Aktion</th>
+            </tr>
+          </thead>
+          <tbody id="changesBody"></tbody>
+        </table>
+      </div>
+    </section>
   </main>
 
   <script>
     const teamsBody = document.getElementById('teamsBody');
     const playersBody = document.getElementById('playersBody');
+    const changesBody = document.getElementById('changesBody');
     const teamMsg = document.getElementById('teamMsg');
     const playerMsg = document.getElementById('playerMsg');
+    const changeMsg = document.getElementById('changeMsg');
     const newPlayerTeam = document.getElementById('newPlayerTeam');
+    const viewButtons = [...document.querySelectorAll('[data-view]')];
+    const views = {
+      teams: document.getElementById('view-teams'),
+      players: document.getElementById('view-players'),
+      changes: document.getElementById('view-changes'),
+    };
     let teams = [];
     let players = [];
+    let rankingChanges = [];
 
     function setMsg(el, text, isError = false) {
       el.textContent = text;
@@ -258,6 +327,39 @@
         { v: 1, l: '1 - Captain' },
         { v: 2, l: '2 - Capt. Stv.' },
       ].map(o => `<option value="${o.v}" ${o.v === s ? 'selected' : ''}>${o.l}</option>`).join('');
+    }
+
+    function showView(key) {
+      Object.entries(views).forEach(([viewKey, el]) => {
+        el.classList.toggle('active', viewKey === key);
+      });
+      viewButtons.forEach((button) => {
+        button.classList.toggle('active', button.dataset.view === key);
+      });
+    }
+
+    function formatChangedAt(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      const date = new Date(raw.replace(' ', 'T'));
+      if (Number.isNaN(date.getTime())) return raw;
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function toDateTimeLocalValue(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      const date = new Date(raw.replace(' ', 'T'));
+      if (Number.isNaN(date.getTime())) return '';
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function fromDateTimeLocalValue(value) {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      return `${raw.replace('T', ' ')}:00`;
     }
 
     function renderTeams() {
@@ -363,17 +465,92 @@
       }
     }
 
+    function renderRankingChanges() {
+      changesBody.innerHTML = '';
+      for (const item of rankingChanges) {
+        const tr = document.createElement('tr');
+        const playerLabel = item.myTennisID
+          ? `<a class="player-link" href="${item.myTennisID}" target="_blank" rel="noopener noreferrer">${item.player_name || ''}</a>`
+          : (item.player_name || '');
+        tr.innerHTML = `
+          <td><div class="link-cell">${playerLabel}</div></td>
+          <td><input data-f="old_klassierung" value="${item.old_klassierung || ''}" /></td>
+          <td><input data-f="new_klassierung" value="${item.new_klassierung || ''}" /></td>
+          <td><input data-f="changed_at" value="${formatChangedAt(item.changed_at)}" readonly /></td>
+          <td class="act">
+            <button data-a="save">Speichern</button>
+            <button data-a="del" class="danger">Löschen</button>
+          </td>
+        `;
+
+        tr.querySelector('[data-a="save"]').addEventListener('click', async () => {
+          try {
+            const payload = {
+              player_name: item.player_name || '',
+              myTennisID: item.myTennisID || '',
+              old_klassierung: tr.querySelector('[data-f="old_klassierung"]').value,
+              new_klassierung: tr.querySelector('[data-f="new_klassierung"]').value,
+              changed_at: item.changed_at,
+            };
+            await api(`/api/ranking-changes/${item.id}`, 'PUT', payload);
+            setMsg(changeMsg, 'Klassierungsänderung gespeichert');
+            await loadAll();
+          } catch (e) {
+            setMsg(changeMsg, e.message, true);
+          }
+        });
+
+        tr.querySelector('[data-a="del"]').addEventListener('click', async () => {
+          if (!confirm('Klassierungsänderung wirklich löschen?')) return;
+          try {
+            await api(`/api/ranking-changes/${item.id}`, 'DELETE');
+            setMsg(changeMsg, 'Klassierungsänderung gelöscht');
+            await loadAll();
+          } catch (e) {
+            setMsg(changeMsg, e.message, true);
+          }
+        });
+
+        changesBody.appendChild(tr);
+      }
+    }
+
     async function loadAll() {
       const t = await api('/api/teams');
       teams = t.items || [];
       const p = await api('/api/players');
       players = p.items || [];
+      const c = await api('/api/ranking-changes');
+      rankingChanges = c.items || [];
       renderTeams();
       renderPlayers();
+      renderRankingChanges();
     }
 
     document.getElementById('refreshTeams').addEventListener('click', loadAll);
     document.getElementById('refreshPlayers').addEventListener('click', loadAll);
+    document.getElementById('refreshChanges').addEventListener('click', loadAll);
+    viewButtons.forEach((button) => {
+      button.addEventListener('click', () => showView(button.dataset.view));
+    });
+    document.getElementById('runRankUpdate').addEventListener('click', async () => {
+      const button = document.getElementById('runRankUpdate');
+      button.disabled = true;
+      setMsg(playerMsg, 'Klassierungen werden aktualisiert ...');
+      try {
+        const result = await api('/api/actions/update-klassierung', 'POST', {});
+        setMsg(playerMsg, 'Klassierungen aktualisiert');
+        setMsg(changeMsg, 'Klassierungsänderungen aktualisiert');
+        await loadAll();
+        alert(result.output || 'Klassierungen aktualisiert.');
+      } catch (e) {
+        setMsg(playerMsg, e.message, true);
+        setMsg(changeMsg, e.message, true);
+        alert(`Fehler beim Aktualisieren der Klassierungen:\n\n${e.message}`);
+      } finally {
+        button.disabled = false;
+      }
+    });
 
     document.getElementById('addTeam').addEventListener('click', async () => {
       try {
@@ -409,9 +586,11 @@
       }
     });
 
+    showView('teams');
     loadAll().catch((e) => {
       setMsg(teamMsg, e.message, true);
       setMsg(playerMsg, e.message, true);
+      setMsg(changeMsg, e.message, true);
     });
   </script>
 </body>

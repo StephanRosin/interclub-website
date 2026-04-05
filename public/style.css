@@ -277,6 +277,10 @@ table {
   min-width: 980px;
 }
 
+.changes-table {
+  min-width: 780px;
+}
+
 thead th {
   background: var(--blue-800);
   color: #fff;
@@ -372,6 +376,48 @@ td.time,
 .club-name {
   font-weight: 800;
   color: var(--blue-900);
+}
+
+.change-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.change-link {
+  color: var(--blue-900);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.change-link:hover {
+  text-decoration: underline;
+}
+
+.change-arrow {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.change-arrow.up {
+  background: var(--green-100);
+  color: var(--green-600);
+}
+
+.change-arrow.down {
+  background: #ffe9eb;
+  color: #b3354b;
+}
+
+.change-arrow.flat {
+  background: #eef2fb;
+  color: var(--muted);
 }
 
 @media (max-width: 900px) {
