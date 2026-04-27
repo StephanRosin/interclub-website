@@ -5,7 +5,8 @@ import sqlite3
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from datetime import datetime
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
+from urllib.request import Request, urlopen
 
 BASE_DIR = Path(__file__).resolve().parent
 WEB_DIR = BASE_DIR / "public"
@@ -26,6 +27,18 @@ ALLOWED_STATIC_FILES = {
     "matches.json",
     "style.css",
 }
+ENTRY_PAGE_URL = "https://comp.swisstennis.ch/ic{year_suffix}/servlet/EntryPage?ClubName=1298&outputFormat=JSON"
+TEAM_RESULTS_URL = "https://comp.swisstennis.ch/ic{year_suffix}/servlet/TeamResults?TeamId={team_id}&Lang=de&outputFormat=JSON"
+ENCOUNT_RESULTS_URL = "https://comp.swisstennis.ch/ic{year_suffix}/servlet/EncountResults?EncountId={encount_id}&Lang=de&outputFormat=JSON"
+WAIDCUP_DB_CANDIDATES = [
+    Path(os.environ.get("WAIDCUP_DB_PATH", "")).expanduser() if os.environ.get("WAIDCUP_DB_PATH") else None,
+    Path("/home/stephan/Dokumente/Waidcup/data/tcw_tasks.db"),
+    Path("/mnt/Appspool/apps/waidcup/data/tcw_tasks.db"),
+]
+WAIDCUP_PUBLIC_API_URL = os.environ.get(
+    "WAIDCUP_PUBLIC_API_URL",
+    "http://192.168.178.94:3101/public-api/tournament-registrations",
+)
 
 
 def content_type(path: Path) -> str:
@@ -51,6 +64,20 @@ def content_type(path: Path) -> str:
     if ext == ".ttf":
         return "font/ttf"
     return "application/octet-stream"
+
+
+def current_year_str() -> str:
+    return str(datetime.now().year)
+
+
+def normalized_year(year: str | None) -> str:
+    value = str(year or "").strip()
+    return value if value.isdigit() and len(value) == 4 else current_year_str()
+
+
+def year_suffix(year: str | None) -> str:
+    value = normalized_year(year)
+    return "" if value == current_year_str() else value
 
 
 def load_teams() -> dict:
@@ -202,6 +229,196 @@ def load_ranking_changes() -> list[dict]:
     return items
 
 
+def split_ic_liga_name(value: str) -> tuple[str, str, str]:
+    label = str(value or "").strip()
+    if not label:
+        return ("", "", "")
+    if label.endswith(" Damen"):
+        return ("Damen", label[: -len(" Damen")].strip(), label)
+    if label.endswith(" Herren"):
+        return ("Herren", label[: -len(" Herren")].strip(), label)
+    return ("", label, label)
+
+
+def ic_sort_key(label: str) -> tuple[int, int, int, str]:
+    gender, prefix, full = split_ic_liga_name(label)
+    gender_rank = 0 if gender == "Damen" else 1 if gender == "Herren" else 9
+
+    upper_prefix = prefix.upper()
+    liga_rank = 99
+    if "NLC" in upper_prefix:
+        liga_rank = 0
+    elif "1L" in upper_prefix:
+        liga_rank = 1
+    elif "2L" in upper_prefix:
+        liga_rank = 2
+    elif "3L" in upper_prefix:
+        liga_rank = 3
+    elif "NLB" in upper_prefix:
+        liga_rank = 4
+    elif "NLA" in upper_prefix:
+        liga_rank = 5
+
+    age_rank = 0
+    if prefix and not prefix[0].isdigit():
+        age_rank = 0
+    else:
+        digits = "".join(ch for ch in prefix if ch.isdigit())
+        age_rank = int(digits) if digits else 0
+
+    return (gender_rank, liga_rank, age_rank, full.casefold())
+
+
+def load_ic_teams(year: str | None = None) -> list[dict]:
+    req = Request(
+        ENTRY_PAGE_URL.format(year_suffix=year_suffix(year)),
+        headers={
+            "User-Agent": "TCW-Interclub/1.0",
+            "Accept": "application/json",
+        },
+    )
+    with urlopen(req, timeout=20) as response:
+        raw = response.read()
+    payload = json.loads(raw.decode("utf-8"))
+    raw_teams = payload.get("I2cm", {}).get("Mitglied", {}).get("icTeamSet", {}).get("IcTeam", [])
+    teams = raw_teams if isinstance(raw_teams, list) else ([raw_teams] if raw_teams else [])
+
+    items = []
+    for item in teams:
+        liga = item.get("icLigue", {}).get("IcLigue", {}).get("lgName", "").strip() or "–"
+        group_number = item.get("icTeamPoolSet", {}).get("IcTeamPool", {}).get("icPool", {}).get("IcPool", {}).get("poolName2")
+        gender, prefix, _ = split_ic_liga_name(liga)
+        items.append(
+            {
+                "teamId": int(item.get("teamId") or 0),
+                "liga": liga,
+                "label": liga,
+                "gender": gender,
+                "prefix": prefix,
+                "group": str(group_number) if group_number not in (None, "") else "",
+            }
+        )
+
+    return sorted([item for item in items if item["teamId"] > 0], key=lambda item: ic_sort_key(item["liga"]))
+
+
+def load_team_results(team_id: int, year: str | None = None) -> dict:
+    if team_id <= 0:
+        raise ValueError("Invalid TeamId")
+
+    req = Request(
+        TEAM_RESULTS_URL.format(team_id=team_id, year_suffix=year_suffix(year)),
+        headers={
+            "User-Agent": "TCW-Interclub/1.0",
+            "Accept": "application/json",
+        },
+    )
+    with urlopen(req, timeout=20) as response:
+        raw = response.read()
+    return json.loads(raw.decode("utf-8"))
+
+
+def load_encount_results(encount_id: int, year: str | None = None) -> dict:
+    if encount_id <= 0:
+        raise ValueError("Invalid EncountId")
+
+    req = Request(
+        ENCOUNT_RESULTS_URL.format(encount_id=encount_id, year_suffix=year_suffix(year)),
+        headers={
+            "User-Agent": "TCW-Interclub/1.0",
+            "Accept": "application/json",
+        },
+    )
+    with urlopen(req, timeout=20) as response:
+        raw = response.read()
+    return json.loads(raw.decode("utf-8"))
+
+
+def find_waidcup_db_path() -> Path | None:
+    for candidate in WAIDCUP_DB_CANDIDATES:
+        if candidate and candidate.is_file():
+            return candidate
+    return None
+
+
+def read_waidcup_registrations_from_db(db_path: Path) -> list[dict]:
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    events = cur.execute(
+        """
+        SELECT e.event_id, e.event_name, e.source_descr, e.updated_at, c.sort_order
+        FROM tournament_registration_events e
+        LEFT JOIN tournament_registration_event_config c ON c.event_id = e.event_id
+        ORDER BY COALESCE(c.sort_order, 999), e.event_id
+        """
+    ).fetchall()
+
+    players = cur.execute(
+        """
+        SELECT event_id, player_key, player_name, player_name_2, player_url, player_url_2,
+               confirmed, ranking, ranking_2, registered_on, note, sort_order
+        FROM tournament_registration_players
+        ORDER BY event_id ASC, sort_order ASC, player_name COLLATE NOCASE ASC
+        """
+    ).fetchall()
+    conn.close()
+
+    players_by_event_id: dict[int, list[dict]] = {}
+    for row in players:
+        players_by_event_id.setdefault(row["event_id"], []).append(
+            {
+                "player_key": row["player_key"],
+                "player_name": row["player_name"],
+                "player_name_2": row["player_name_2"] or "",
+                "player_url": row["player_url"] or "",
+                "player_url_2": row["player_url_2"] or "",
+                "confirmed": 1 if int(row["confirmed"] or 0) == 1 else 0,
+                "ranking": row["ranking"] or "",
+                "ranking_2": row["ranking_2"] or "",
+                "registered_on": row["registered_on"] or "",
+                "note": row["note"] or "",
+                "sort_order": int(row["sort_order"] or 0),
+            }
+        )
+
+    return [
+        {
+            "event_id": row["event_id"],
+            "event_name": row["event_name"],
+            "source_descr": row["source_descr"] or "",
+            "updated_at": row["updated_at"],
+            "players": players_by_event_id.get(row["event_id"], []),
+        }
+        for row in events
+    ]
+
+
+def load_waidcup_registrations() -> dict:
+    db_path = find_waidcup_db_path()
+    if db_path:
+        return {
+            "source": "db",
+            "events": read_waidcup_registrations_from_db(db_path),
+        }
+
+    req = Request(
+        WAIDCUP_PUBLIC_API_URL,
+        headers={
+            "User-Agent": "TCW-Interclub/1.0",
+            "Accept": "application/json",
+        },
+    )
+    with urlopen(req, timeout=20) as response:
+        raw = response.read()
+    payload = json.loads(raw.decode("utf-8"))
+    return {
+        "source": "api",
+        "events": payload.get("events", []),
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     def _send(self, status: int, body: bytes, ctype: str) -> None:
         self.send_response(status)
@@ -217,6 +434,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
+        query = parse_qs(parsed.query)
 
         if path == "/api/health":
             self._send(200, b'{"ok":true}', "application/json; charset=utf-8")
@@ -238,6 +456,51 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, payload, "application/json; charset=utf-8")
             except Exception as exc:
                 print(f"/api/ranking-changes failed: {exc}")
+                payload = json.dumps({"error": "Interner Serverfehler"}).encode("utf-8")
+                self._send(500, payload, "application/json; charset=utf-8")
+            return
+
+        if path == "/api/waidcup-registrations":
+            try:
+                payload = json.dumps(load_waidcup_registrations(), ensure_ascii=False).encode("utf-8")
+                self._send(200, payload, "application/json; charset=utf-8")
+            except Exception as exc:
+                print(f"/api/waidcup-registrations failed: {exc}")
+                payload = json.dumps({"error": "Interner Serverfehler"}).encode("utf-8")
+                self._send(500, payload, "application/json; charset=utf-8")
+            return
+
+        if path == "/api/ic/teams":
+            try:
+                year = query.get("year", [None])[0]
+                payload = json.dumps({"items": load_ic_teams(year)}, ensure_ascii=False).encode("utf-8")
+                self._send(200, payload, "application/json; charset=utf-8")
+            except Exception as exc:
+                print(f"{path} failed: {exc}")
+                payload = json.dumps({"error": "Interner Serverfehler"}).encode("utf-8")
+                self._send(500, payload, "application/json; charset=utf-8")
+            return
+
+        if path.startswith("/api/ic/team/"):
+            try:
+                team_id = int(path.rsplit("/", 1)[-1])
+                year = query.get("year", [None])[0]
+                payload = json.dumps(load_team_results(team_id, year), ensure_ascii=False).encode("utf-8")
+                self._send(200, payload, "application/json; charset=utf-8")
+            except Exception as exc:
+                print(f"{path} failed: {exc}")
+                payload = json.dumps({"error": "Interner Serverfehler"}).encode("utf-8")
+                self._send(500, payload, "application/json; charset=utf-8")
+            return
+
+        if path.startswith("/api/ic/encount/"):
+            try:
+                encount_id = int(path.rsplit("/", 1)[-1])
+                year = query.get("year", [None])[0]
+                payload = json.dumps(load_encount_results(encount_id, year), ensure_ascii=False).encode("utf-8")
+                self._send(200, payload, "application/json; charset=utf-8")
+            except Exception as exc:
+                print(f"{path} failed: {exc}")
                 payload = json.dumps({"error": "Interner Serverfehler"}).encode("utf-8")
                 self._send(500, payload, "application/json; charset=utf-8")
             return

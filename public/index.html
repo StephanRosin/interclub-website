@@ -3,25 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Interclub 2026 | TC Waidberg</title>
+  <title>TCW Spielbetrieb 2026 | TC Waidberg</title>
   <link rel="preload" href="./fonts/manrope-400.ttf" as="font" type="font/ttf" crossorigin />
   <link rel="preload" href="./fonts/manrope-700.ttf" as="font" type="font/ttf" crossorigin />
   <link rel="icon" type="image/png" sizes="64x64" href="./favicon.png" />
   <link rel="shortcut icon" href="./favicon.ico" />
-  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./style.css?v=20260427j" />
 </head>
 <body>
   <main class="page">
     <section class="hero">
       <div>
-        <h1>TCW Interclub 2026</h1>
+        <h1>TCW Spielbetrieb 2026</h1>
         <div id="header-stand" class="subhead">Stand 22. März 2026</div>
         <div class="page-nav" aria-label="Seitennavigation">
           <div class="switch" role="tablist" aria-label="Seitenbereiche">
             <button class="active" type="button" data-view="teams">Teams</button>
             <button type="button" data-view="training">Trainingsplan</button>
             <button type="button" data-view="matches">Spieltermine</button>
-            <button type="button" data-view="changes">Klassierungsänderungen</button>
+            <button type="button" data-view="results">Ergebnisse</button>
+            <button type="button" data-view="ratings">Klassierungen</button>
+            <button type="button" data-view="waidcup">Waidcup</button>
           </div>
         </div>
       </div>
@@ -106,30 +108,201 @@
       </section>
     </section>
 
-    <section id="view-changes" class="view" aria-live="polite">
-      <section class="panel">
+    <section id="view-results" class="view" aria-live="polite">
+      <section class="toolbar results-toolbar" aria-label="Interclub-Filter">
+        <div class="results-filter-stack">
+          <div class="results-year-switch" role="tablist" aria-label="Jahr auswählen">
+            <button type="button" data-results-year="2026">2026</button>
+            <button type="button" data-results-year="2025">2025</button>
+            <button type="button" data-results-year="2024">2024</button>
+            <button type="button" data-results-year="2023">2023</button>
+            <button type="button" data-results-year="2022">2022</button>
+            <button type="button" data-results-year="2021">2021</button>
+          </div>
+          <div id="results-team-switch" class="results-team-switch"></div>
+        </div>
+      </section>
+      <section class="panel results-panel">
+        <div id="results-overview">
+          <div class="results-intro">
+            <h2 id="results-title">Ergebnisse</h2>
+            <p id="results-subtitle">Lädt…</p>
+          </div>
+          <div class="results-grid">
+            <div class="results-column">
+              <p class="results-section-title">Resultate</p>
+              <div class="table-wrap">
+                <table class="results-table">
+                  <thead>
+                    <tr>
+                      <th>Runde</th>
+                      <th>Datum</th>
+                      <th>Begegnung</th>
+                      <th>Resultat</th>
+                    </tr>
+                  </thead>
+                  <tbody id="results-matches-body"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="results-column">
+              <p class="results-section-title">Rangliste</p>
+              <div class="table-wrap">
+                <table class="results-ranking-table">
+                  <thead>
+                    <tr>
+                      <th>Rang</th>
+                      <th>Team</th>
+                      <th>Punkte</th>
+                      <th>Sätze</th>
+                    </tr>
+                  </thead>
+                  <tbody id="results-ranking-body"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="results-detail" class="results-detail" hidden>
+          <div class="results-detail-head">
+            <button id="results-back" class="results-back" type="button">← Zurück</button>
+            <div class="results-detail-meta">
+              <h2 id="encount-title">Begegnung</h2>
+              <p id="encount-subtitle">Lädt…</p>
+            </div>
+            <a id="encount-badge" class="encount-badge" href="#" target="_blank" rel="noopener noreferrer">–:–</a>
+          </div>
+          <div class="results-detail-section">
+            <p class="results-section-title">Einzel</p>
+            <div class="table-wrap">
+              <table class="encount-table">
+                <thead>
+                  <tr>
+                    <th>Position</th>
+                    <th id="encount-singles-home-head">Heim</th>
+                    <th id="encount-singles-visit-head">Gast</th>
+                    <th>Resultat</th>
+                  </tr>
+                </thead>
+                <tbody id="encount-singles-body"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="results-detail-section">
+            <p class="results-section-title">Doppel</p>
+            <div class="table-wrap">
+              <table class="encount-table">
+                <thead>
+                  <tr>
+                    <th>Position</th>
+                    <th id="encount-doubles-home-head">Heim</th>
+                    <th id="encount-doubles-visit-head">Gast</th>
+                    <th>Resultat</th>
+                  </tr>
+                </thead>
+                <tbody id="encount-doubles-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div id="results-empty" class="empty">Keine Resultate verfügbar.</div>
+    </section>
+
+    <section id="view-ratings" class="view" aria-live="polite">
+      <section class="toolbar" aria-label="Klassierungen">
+        <div class="switch" role="tablist" aria-label="Klassierungen">
+          <button id="btn-rating-changes" type="button" data-ratings-view="changes" class="active">Klassierungsänderungen</button>
+          <button id="btn-rating-compare" type="button" data-ratings-view="compare">Klassierungsvergleich DE/US</button>
+        </div>
+      </section>
+
+      <section id="ratings-changes" class="ratings-subview active">
+        <section class="panel">
+          <div class="table-wrap">
+            <table class="changes-table">
+              <thead>
+                <tr>
+                  <th>Spieler</th>
+                  <th>Klassierung neu</th>
+                  <th>Klassierung alt</th>
+                  <th>Datum</th>
+                </tr>
+              </thead>
+              <tbody id="changes-body"></tbody>
+            </table>
+          </div>
+        </section>
+        <div id="changes-empty" class="empty">Keine Klassierungsänderungen vorhanden.</div>
+      </section>
+
+      <section id="ratings-compare" class="ratings-subview" hidden>
+        <section class="panel compare-panel">
+          <div class="compare-intro">
+            <h2>LK ↔ Swiss Tennis</h2>
+            <p>Vergleich der deutschen Leistungsklassen mit der Swiss-Tennis-Klassierung und einer groben NTRP-Einordnung.</p>
+          </div>
+          <div class="table-wrap">
+            <table class="compare-table">
+              <thead>
+                <tr>
+                  <th>LK</th>
+                  <th>Swiss</th>
+                  <th>Niveau</th>
+                  <th>NTRP</th>
+                </tr>
+              </thead>
+              <tbody id="compare-body"></tbody>
+            </table>
+          </div>
+          <div class="compare-legend" id="compare-legend"></div>
+          <div class="compare-note">
+            Quelle: ITN Conversion Chart (ITF, rev. 2009), ergänzt durch die Uni-St.-Gallen-Konversionstabelle. Übergänge zwischen Klassen sind fliessend.
+          </div>
+        </section>
+      </section>
+    </section>
+
+    <section id="view-waidcup" class="view" aria-live="polite">
+      <section class="panel waidcup-panel">
+        <div class="waidcup-intro">
+          <div class="waidcup-intro-head">
+            <h2>Anmeldungen</h2>
+            <a class="cta-link" href="https://www.mytennis.ch/de/turniere/158138" target="_blank" rel="noopener noreferrer">
+              Jetzt anmelden
+            </a>
+          </div>
+          <p id="waidcup-updated">Lädt…</p>
+        </div>
+        <div id="waidcup-event-tabs" class="switch waidcup-event-tabs" role="tablist" aria-label="Waidcup Kategorien"></div>
         <div class="table-wrap">
-          <table class="changes-table">
+          <table class="waidcup-table">
             <thead>
               <tr>
                 <th>Spieler</th>
-                <th>Klassierung alt</th>
-                <th>Klassierung neu</th>
-                <th>Datum</th>
+                <th>Klassierung</th>
+                <th>Anmeldedatum</th>
               </tr>
             </thead>
-            <tbody id="changes-body"></tbody>
+            <tbody id="waidcup-body">
+              <tr>
+                <td colspan="3">Lädt…</td>
+              </tr>
+            </tbody>
           </table>
         </div>
       </section>
-      <div id="changes-empty" class="empty">Keine Klassierungsänderungen vorhanden.</div>
+      <div id="waidcup-empty" class="empty">Keine Waidcup-Anmeldungen vorhanden.</div>
     </section>
   </main>
 
   <template id="card-template">
     <article class="card">
       <header class="card-head">
-        <h2 class="card-title"></h2>
+        <div class="card-head-top">
+          <h2 class="card-title"></h2>
+          <button type="button" class="team-group-link" hidden></button>
+        </div>
         <div class="card-meta">
           <div class="meta-line meta-teamziel"></div>
           <div class="meta-line meta-training"></div>
@@ -139,6 +312,6 @@
     </article>
   </template>
 
-  <script src="./app.js"></script>
+  <script src="./app.js?v=20260427j"></script>
 </body>
 </html>
