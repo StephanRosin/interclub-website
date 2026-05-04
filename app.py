@@ -7,6 +7,7 @@ from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs
 from urllib.request import Request, urlopen
+from training_seed import DEFAULT_TRAINING_SLOTS, TRAINING_DAYS
 
 BASE_DIR = Path(__file__).resolve().parent
 WEB_DIR = BASE_DIR / "public"
@@ -39,6 +40,14 @@ WAIDCUP_PUBLIC_API_URL = os.environ.get(
     "WAIDCUP_PUBLIC_API_URL",
     "http://192.168.178.94:3101/public-api/tournament-registrations",
 )
+DAY_ORDER = {day: index for index, day in enumerate(TRAINING_DAYS)}
+
+
+def db_connect():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys=ON")
+    return conn
 
 
 def content_type(path: Path) -> str:
@@ -78,6 +87,117 @@ def normalized_year(year: str | None) -> str:
 def year_suffix(year: str | None) -> str:
     value = normalized_year(year)
     return "" if value == current_year_str() else value
+
+
+def ensure_training_schema() -> None:
+    conn = db_connect()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS training_slots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            day TEXT NOT NULL,
+            time_from TEXT NOT NULL,
+            time_to TEXT NOT NULL,
+            court_number INTEGER NOT NULL,
+            team_id INTEGER REFERENCES teams(id) ON DELETE SET NULL,
+            label_override TEXT NOT NULL DEFAULT '',
+            UNIQUE(day, time_from, time_to, court_number)
+        )
+        """
+    )
+
+    teams_exists = cur.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='teams'"
+    ).fetchone()
+    slot_count = cur.execute("SELECT COUNT(*) FROM training_slots").fetchone()[0]
+
+    if teams_exists and slot_count == 0:
+        for slot in DEFAULT_TRAINING_SLOTS:
+            team_id = None
+            label_override = str(slot.get("label", "")).strip()
+            team_title = str(slot.get("team_title", "")).strip()
+            if team_title:
+                row = cur.execute(
+                    """
+                    SELECT id
+                    FROM teams
+                    WHERE trim(gender || ' ' || category || ' ' || liga) = ?
+                    """,
+                    (team_title,),
+                ).fetchone()
+                if row:
+                    team_id = int(row["id"])
+                    label_override = ""
+                else:
+                    label_override = team_title
+
+            cur.execute(
+                """
+                INSERT OR IGNORE INTO training_slots(day, time_from, time_to, court_number, team_id, label_override)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    slot["day"],
+                    slot["time_from"],
+                    slot["time_to"],
+                    int(slot["court_number"]),
+                    team_id,
+                    label_override,
+                ),
+            )
+
+    conn.commit()
+    conn.close()
+
+
+def load_training_plan() -> dict[str, list[dict]]:
+    ensure_training_schema()
+    conn = db_connect()
+    rows = conn.execute(
+        """
+        SELECT ts.day, ts.time_from, ts.time_to, ts.court_number, ts.label_override,
+               ts.team_id, t.gender, t.category, t.liga
+        FROM training_slots ts
+        LEFT JOIN teams t ON t.id = ts.team_id
+        ORDER BY CASE ts.day
+                   WHEN 'Montag' THEN 0
+                   WHEN 'Dienstag' THEN 1
+                   WHEN 'Mittwoch' THEN 2
+                   WHEN 'Donnerstag' THEN 3
+                   WHEN 'Freitag' THEN 4
+                   ELSE 99
+                 END,
+                 ts.time_from,
+                 ts.time_to,
+                 ts.court_number
+        """
+    ).fetchall()
+    conn.close()
+
+    days = {day: [] for day in TRAINING_DAYS}
+    row_map: dict[tuple[str, str, str], dict] = {}
+    for row in rows:
+        key = (row["day"], row["time_from"], row["time_to"])
+        target = row_map.get(key)
+        if target is None:
+            target = {
+                "time": f"{row['time_from']}-{row['time_to']}",
+                "courts": ["", "", "", ""],
+            }
+            row_map[key] = target
+            days.setdefault(row["day"], []).append(target)
+
+        if row["team_id"]:
+            label = f"{row['gender']} {row['category']} {row['liga']}".strip()
+        else:
+            label = row["label_override"] or ""
+
+        court_number = int(row["court_number"] or 0)
+        if 1 <= court_number <= 4:
+            target["courts"][court_number - 1] = label
+
+    return days
 
 
 def load_teams() -> dict:
@@ -460,6 +580,16 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(500, payload, "application/json; charset=utf-8")
             return
 
+        if path == "/api/training-slots":
+            try:
+                payload = json.dumps({"days": load_training_plan()}, ensure_ascii=False).encode("utf-8")
+                self._send(200, payload, "application/json; charset=utf-8")
+            except Exception as exc:
+                print(f"/api/training-slots failed: {exc}")
+                payload = json.dumps({"error": "Interner Serverfehler"}).encode("utf-8")
+                self._send(500, payload, "application/json; charset=utf-8")
+            return
+
         if path == "/api/waidcup-registrations":
             try:
                 payload = json.dumps(load_waidcup_registrations(), ensure_ascii=False).encode("utf-8")
@@ -533,6 +663,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    ensure_training_schema()
     print(f"Serving on {HOST}:{PORT}, db={DB_PATH}")
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     server.serve_forever()

@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
+from training_seed import DEFAULT_TRAINING_SLOTS, TRAINING_DAYS
 
 BASE_DIR = Path(__file__).resolve().parent
 WEB_DIR = BASE_DIR
@@ -26,6 +27,9 @@ SEARCH_HEADERS = {
     "Referer": "https://www.mytennis.ch/",
     "User-Agent": "Mozilla/5.0",
 }
+DAY_ORDER = {day: index for index, day in enumerate(TRAINING_DAYS)}
+EVENING_START = "18:00"
+EVENING_END = "22:00"
 
 
 def db_connect():
@@ -50,6 +54,57 @@ def ensure_schema():
         )
         """
     )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS training_slots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            day TEXT NOT NULL,
+            time_from TEXT NOT NULL,
+            time_to TEXT NOT NULL,
+            court_number INTEGER NOT NULL,
+            team_id INTEGER REFERENCES teams(id) ON DELETE SET NULL,
+            label_override TEXT NOT NULL DEFAULT '',
+            UNIQUE(day, time_from, time_to, court_number)
+        )
+        """
+    )
+
+    slot_count = conn.execute("SELECT COUNT(*) FROM training_slots").fetchone()[0]
+    if slot_count == 0:
+        for slot in DEFAULT_TRAINING_SLOTS:
+            team_id = None
+            label_override = str(slot.get("label", "")).strip()
+            team_title = str(slot.get("team_title", "")).strip()
+            if team_title:
+                row = conn.execute(
+                    """
+                    SELECT id
+                    FROM teams
+                    WHERE trim(gender || ' ' || category || ' ' || liga) = ?
+                    """,
+                    (team_title,),
+                ).fetchone()
+                if row:
+                    team_id = int(row["id"])
+                    label_override = ""
+                else:
+                    label_override = team_title
+
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO training_slots(day, time_from, time_to, court_number, team_id, label_override)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    slot["day"],
+                    slot["time_from"],
+                    slot["time_to"],
+                    int(slot["court_number"]),
+                    team_id,
+                    label_override,
+                ),
+            )
     conn.commit()
     conn.close()
 
@@ -351,6 +406,50 @@ def list_ranking_changes():
     return out
 
 
+def list_training_slots():
+    ensure_schema()
+    conn = db_connect()
+    cur = conn.cursor()
+    rows = cur.execute(
+        """
+        SELECT ts.id, ts.day, ts.time_from, ts.time_to, ts.court_number, ts.team_id, ts.label_override,
+               t.gender, t.category, t.liga
+        FROM training_slots ts
+        LEFT JOIN teams t ON t.id = ts.team_id
+        ORDER BY CASE ts.day
+                   WHEN 'Montag' THEN 0
+                   WHEN 'Dienstag' THEN 1
+                   WHEN 'Mittwoch' THEN 2
+                   WHEN 'Donnerstag' THEN 3
+                   WHEN 'Freitag' THEN 4
+                   ELSE 99
+                 END,
+                 ts.time_from,
+                 ts.time_to,
+                 ts.court_number,
+                 ts.id
+        """
+    ).fetchall()
+    conn.close()
+
+    out = []
+    for r in rows:
+        display = f"{r['gender']} {r['category']} {r['liga']}".strip() if r["team_id"] else (r["label_override"] or "")
+        out.append(
+            {
+                "id": r["id"],
+                "day": r["day"],
+                "time_from": r["time_from"],
+                "time_to": r["time_to"],
+                "court_number": int(r["court_number"]),
+                "team_id": int(r["team_id"]) if r["team_id"] else None,
+                "label_override": r["label_override"] or "",
+                "display_label": display,
+            }
+        )
+    return out
+
+
 def validate_team(data):
     required = ["gender", "category", "liga", "teamziel", "trainingstag"]
     for key in required:
@@ -385,6 +484,124 @@ def validate_ranking_change(data):
     if not str(data.get("changed_at", "")).strip():
         return "Feld 'changed_at' ist erforderlich."
     return None
+
+
+def validate_training_slot(data):
+    day = str(data.get("day", "")).strip()
+    time_from = str(data.get("time_from", "")).strip()
+    time_to = str(data.get("time_to", "")).strip()
+    label_override = str(data.get("label_override", "")).strip()
+    team_raw = data.get("team_id")
+
+    if day not in TRAINING_DAYS:
+        return "Ungültiger Tag."
+    if not re.fullmatch(r"\d{2}:\d{2}", time_from):
+        return "time_from muss HH:MM sein."
+    if not re.fullmatch(r"\d{2}:\d{2}", time_to):
+        return "time_to muss HH:MM sein."
+    if time_from >= time_to:
+        return "time_to muss nach time_from liegen."
+    try:
+        court_number = int(data.get("court_number"))
+    except Exception:
+        return "court_number ist ungültig."
+    if court_number < 1 or court_number > 4:
+        return "court_number muss zwischen 1 und 4 liegen."
+    if team_raw in (None, "", 0, "0"):
+        if not label_override:
+            return "Ohne Team ist ein Freitext erforderlich."
+    else:
+        try:
+            team_id = int(team_raw)
+        except Exception:
+            return "team_id ist ungültig."
+        if team_id <= 0:
+            return "team_id ist ungültig."
+    return None
+
+
+def validate_training_grid_item(data):
+    day = str(data.get("day", "")).strip()
+    time_from = str(data.get("time_from", "")).strip()
+    time_to = str(data.get("time_to", "")).strip()
+    label_override = str(data.get("label_override", "")).strip()
+    team_raw = data.get("team_id")
+
+    if day not in TRAINING_DAYS:
+        return "Ungültiger Tag."
+    if not re.fullmatch(r"\d{2}:\d{2}", time_from):
+        return "time_from muss HH:MM sein."
+    if not re.fullmatch(r"\d{2}:\d{2}", time_to):
+        return "time_to muss HH:MM sein."
+    if time_from >= time_to:
+        return "time_to muss nach time_from liegen."
+    try:
+        court_number = int(data.get("court_number"))
+    except Exception:
+        return "court_number ist ungültig."
+    if court_number < 1 or court_number > 4:
+        return "court_number muss zwischen 1 und 4 liegen."
+    if time_from < EVENING_START or time_to > EVENING_END:
+        return "Trainingsgrid erlaubt nur Slots zwischen 18:00 und 22:00."
+    if team_raw not in (None, "", 0, "0"):
+        try:
+            team_id = int(team_raw)
+        except Exception:
+            return "team_id ist ungültig."
+        if team_id <= 0:
+            return "team_id ist ungültig."
+    elif label_override:
+        return None
+    return None
+
+
+def save_training_grid(items):
+    ensure_schema()
+    conn = db_connect()
+    cur = conn.cursor()
+
+    for day in TRAINING_DAYS:
+        cur.execute(
+            """
+            DELETE FROM training_slots
+            WHERE day=? AND time_from >= ? AND time_to <= ?
+            """,
+            (day, EVENING_START, EVENING_END),
+        )
+
+    for item in items:
+        err = validate_training_grid_item(item)
+        if err:
+            conn.rollback()
+            conn.close()
+            raise ValueError(err)
+
+        team_raw = item.get("team_id")
+        label_override = str(item.get("label_override", "")).strip()
+        team_id = None
+        if team_raw not in (None, "", 0, "0"):
+            team_id = int(team_raw)
+            label_override = ""
+        elif not label_override:
+            continue
+
+        cur.execute(
+            """
+            INSERT INTO training_slots(day, time_from, time_to, court_number, team_id, label_override)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                str(item["day"]).strip(),
+                str(item["time_from"]).strip(),
+                str(item["time_to"]).strip(),
+                int(item["court_number"]),
+                team_id,
+                label_override,
+            ),
+        )
+
+    conn.commit()
+    conn.close()
 
 
 def run_klassierung_update() -> dict:
@@ -426,6 +643,9 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/ranking-changes":
             return json_response(self, 200, {"items": list_ranking_changes()})
+
+        if path == "/api/training-slots":
+            return json_response(self, 200, {"items": list_training_slots()})
 
         if path in ("/", "/admin", "/admin/"):
             html = (WEB_DIR / "admin.html").read_bytes()
@@ -509,6 +729,48 @@ class Handler(BaseHTTPRequestHandler):
                 return json_response(self, 200, run_klassierung_update())
             except Exception as exc:
                 return json_response(self, 500, {"error": str(exc)})
+
+        if path == "/api/training-slots":
+            data = read_json(self)
+            err = validate_training_slot(data)
+            if err:
+                return json_response(self, 400, {"error": err})
+
+            conn = db_connect()
+            try:
+                conn.execute(
+                    """
+                    INSERT INTO training_slots(day, time_from, time_to, court_number, team_id, label_override)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        str(data["day"]).strip(),
+                        str(data["time_from"]).strip(),
+                        str(data["time_to"]).strip(),
+                        int(data["court_number"]),
+                        int(data["team_id"]) if data.get("team_id") not in (None, "", 0, "0") else None,
+                        "" if data.get("team_id") not in (None, "", 0, "0") else str(data.get("label_override", "")).strip(),
+                    ),
+                )
+                conn.commit()
+            except sqlite3.IntegrityError as e:
+                conn.close()
+                return json_response(self, 409, {"error": f"DB-Fehler: {e}"})
+            conn.close()
+            return json_response(self, 201, {"ok": True})
+
+        if path == "/api/training-slots/bulk":
+            data = read_json(self)
+            items = data.get("items")
+            if not isinstance(items, list):
+                return json_response(self, 400, {"error": "items muss eine Liste sein."})
+            try:
+                save_training_grid(items)
+            except ValueError as exc:
+                return json_response(self, 400, {"error": str(exc)})
+            except sqlite3.IntegrityError as exc:
+                return json_response(self, 409, {"error": f"DB-Fehler: {exc}"})
+            return json_response(self, 200, {"ok": True})
 
         return json_response(self, 404, {"error": "Not Found"})
 
@@ -635,6 +897,40 @@ class Handler(BaseHTTPRequestHandler):
             conn.close()
             return json_response(self, 200, {"ok": True})
 
+        if path.startswith("/api/training-slots/"):
+            slot_id = path.rsplit("/", 1)[-1]
+            if not slot_id.isdigit():
+                return json_response(self, 400, {"error": "Ungültige Slot-ID"})
+            data = read_json(self)
+            err = validate_training_slot(data)
+            if err:
+                return json_response(self, 400, {"error": err})
+
+            conn = db_connect()
+            try:
+                conn.execute(
+                    """
+                    UPDATE training_slots
+                    SET day=?, time_from=?, time_to=?, court_number=?, team_id=?, label_override=?
+                    WHERE id=?
+                    """,
+                    (
+                        str(data["day"]).strip(),
+                        str(data["time_from"]).strip(),
+                        str(data["time_to"]).strip(),
+                        int(data["court_number"]),
+                        int(data["team_id"]) if data.get("team_id") not in (None, "", 0, "0") else None,
+                        "" if data.get("team_id") not in (None, "", 0, "0") else str(data.get("label_override", "")).strip(),
+                        int(slot_id),
+                    ),
+                )
+                conn.commit()
+            except sqlite3.IntegrityError as e:
+                conn.close()
+                return json_response(self, 409, {"error": f"DB-Fehler: {e}"})
+            conn.close()
+            return json_response(self, 200, {"ok": True})
+
         return json_response(self, 404, {"error": "Not Found"})
 
     def do_DELETE(self):
@@ -666,6 +962,16 @@ class Handler(BaseHTTPRequestHandler):
                 return json_response(self, 400, {"error": "Ungültige Änderungs-ID"})
             conn = db_connect()
             conn.execute("DELETE FROM ranking_changes WHERE id=?", (int(change_id),))
+            conn.commit()
+            conn.close()
+            return json_response(self, 200, {"ok": True})
+
+        if path.startswith("/api/training-slots/"):
+            slot_id = path.rsplit("/", 1)[-1]
+            if not slot_id.isdigit():
+                return json_response(self, 400, {"error": "Ungültige Slot-ID"})
+            conn = db_connect()
+            conn.execute("DELETE FROM training_slots WHERE id=?", (int(slot_id),))
             conn.commit()
             conn.close()
             return json_response(self, 200, {"ok": True})

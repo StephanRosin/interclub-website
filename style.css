@@ -312,7 +312,7 @@ table {
 }
 
 .matches-table {
-  min-width: 980px;
+  min-width: 1080px;
 }
 
 .changes-table {
@@ -870,7 +870,9 @@ td.time,
 .results-table th:last-child,
 .results-table td:last-child,
 .results-ranking-table th:last-child,
-.results-ranking-table td:last-child {
+.results-ranking-table td:last-child,
+.matches-table th:last-child,
+.matches-table td:last-child {
   text-align: right;
 }
 

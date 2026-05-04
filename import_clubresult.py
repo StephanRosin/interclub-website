@@ -1,121 +1,172 @@
 #!/usr/bin/env python3
+import argparse
 import json
-import re
-import subprocess
-import sys
+from datetime import datetime
 from pathlib import Path
+from urllib.request import Request, urlopen
 
 
 BASE_DIR = Path(__file__).resolve().parent
 PUBLIC_DIR = BASE_DIR / "public"
 DEFAULT_OUTPUT = PUBLIC_DIR / "matches.json"
+CLUB_ID = 1298
+MONTHS_DE = [
+    "Januar",
+    "Februar",
+    "März",
+    "April",
+    "Mai",
+    "Juni",
+    "Juli",
+    "August",
+    "September",
+    "Oktober",
+    "November",
+    "Dezember",
+]
 
-LINE_RE = re.compile(
-    r"^(?P<prefix>.*?\S)\s{2,}(?P<runde>\d+)\s+(?P<home>.+?)\s{2,}(?P<away>.+?)\s*$"
-)
-STAMP_RE = re.compile(r"\b\d{1,2}\s+\w+\s+\d{4}\b")
-DATE_RE = re.compile(r"^(?P<date>\d{1,2}\s+\w+)\b")
-TIME_RE = re.compile(r"^(?P<time>\d{2}:\d{2})\b")
+
+def current_year_str() -> str:
+    return str(datetime.now().year)
 
 
-def extract_text(pdf_path: Path) -> str:
-    result = subprocess.run(
-        ["pdftotext", "-layout", str(pdf_path), "-"],
-        capture_output=True,
-        text=True,
-        check=True,
+def normalized_year(year: str | None) -> str:
+    value = str(year or "").strip()
+    return value if value.isdigit() and len(value) == 4 else current_year_str()
+
+
+def year_suffix(year: str | None) -> str:
+    value = normalized_year(year)
+    return "" if value == current_year_str() else value
+
+
+def club_result_url(year: str | None) -> str:
+    return (
+        f"https://comp.swisstennis.ch/ic{year_suffix(year)}/servlet/ClubResult"
+        f"?ClubName={CLUB_ID}&Lang=de&outputFormat=JSON"
     )
-    return result.stdout
 
 
-def normalize_stamp(value: str) -> str:
-    parts = value.split()
-    if len(parts) != 3:
-        return value
-    return f"{parts[0]}. {parts[1]} {parts[2]}"
+def fetch_json(year: str | None) -> dict:
+    req = Request(
+        club_result_url(year),
+        headers={
+            "User-Agent": "TCW-Interclub/1.0",
+            "Accept": "application/json",
+        },
+    )
+    with urlopen(req, timeout=20) as response:
+        raw = response.read()
+    return json.loads(raw.decode("utf-8"))
 
 
-def default_input_path() -> Path:
-    local_pdf = BASE_DIR / "ClubResult.pdf"
-    if local_pdf.exists():
-        return local_pdf
-    return Path.home() / "Downloads" / "ClubResult.pdf"
+def clean_text(value: str | None) -> str:
+    return " ".join(str(value or "").replace("\xa0", " ").split())
 
 
-def parse_matches(text: str) -> tuple[list[dict], str]:
+def format_updated_at(today: dict | None, fallback_year: str) -> str:
+    today = today or {}
+    day = today.get("day")
+    month = today.get("month")
+    year = today.get("year") or fallback_year
+    if not isinstance(day, int) or not isinstance(month, int) or not 0 <= month < 12:
+        return ""
+    return f"{day}. {MONTHS_DE[month]} {year}"
+
+
+def format_date(schedule: dict | None) -> str:
+    schedule = schedule or {}
+    day = schedule.get("Day")
+    month = schedule.get("Month")
+    if not isinstance(day, int) or not isinstance(month, int) or not 0 <= month < 12:
+        return ""
+    return f"{day} {MONTHS_DE[month]}"
+
+
+def format_time(schedule: dict | None) -> str:
+    schedule = schedule or {}
+    hour = schedule.get("Hour")
+    minute = schedule.get("Minute")
+    if not isinstance(hour, int) or not isinstance(minute, int):
+        return ""
+    return f"{hour:02d}:{minute:02d}"
+
+
+def format_result(item: dict) -> str:
+    validated = int(item.get("validated") or 0) == 1
+    if not validated:
+        return "–:–"
+    text = clean_text(item.get("Result", {}).get("Text"))
+    return text.replace(" : ", ":") if text else "–:–"
+
+
+def parse_matches(payload: dict, year: str) -> tuple[list[dict], str]:
+    encounts = payload.get("I2cm", {}).get("Encounts", {}).get("Encount", [])
+    encounts = encounts if isinstance(encounts, list) else ([encounts] if encounts else [])
+
     matches = []
-    current_date = ""
-    stamps = STAMP_RE.findall(text)
-    updated_at = normalize_stamp(stamps[-1]) if stamps else ""
+    for item in encounts:
+        schedule = item.get("Schedule", {}) or {}
+        matches.append(
+            {
+                "date": format_date(schedule),
+                "time": format_time(schedule),
+                "liga": clean_text(item.get("Ligue", {}).get("Text")),
+                "runde": str(item.get("nbRound") or ""),
+                "home": clean_text(item.get("HomeTeam", {}).get("content")),
+                "away": clean_text(item.get("VisitTeam", {}).get("content")),
+                "result": format_result(item),
+                "encountId": int(item.get("id") or 0),
+                "validated": 1 if int(item.get("validated") or 0) == 1 else 0,
+                "year": year,
+                "home_is_own": 1 if bool(item.get("home")) else 0,
+                "_sort": (
+                    int(schedule.get("Month") or 99),
+                    int(schedule.get("Day") or 99),
+                    int(schedule.get("Hour") or 99),
+                    int(schedule.get("Minute") or 99),
+                    int(item.get("nbRound") or 99),
+                ),
+            }
+        )
 
-    for raw_line in text.splitlines():
-        line = raw_line.rstrip()
-        if not line.strip():
-            continue
-        if line.startswith("Spielpläne und Resultate:") or line == "Gruppenspiele":
-            continue
-        if line.startswith("Datum") or line.startswith("Seite "):
-            continue
-        if line == "\f":
-            continue
+    matches.sort(key=lambda row: row["_sort"])
+    for row in matches:
+        row.pop("_sort", None)
 
-        match = LINE_RE.match(line)
-        if not match:
-            continue
-
-        prefix = match.group("prefix")
-        date_match = DATE_RE.match(prefix.lstrip())
-        if date_match and prefix[: len(prefix) - len(prefix.lstrip())] == "":
-            current_date = " ".join(date_match.group("date").split())
-            prefix = prefix[date_match.end():]
-        if not current_date:
-            continue
-
-        prefix = prefix.lstrip()
-        time = ""
-        time_match = TIME_RE.match(prefix)
-        if time_match:
-            time = time_match.group("time")
-            prefix = prefix[time_match.end():]
-
-        entry = {
-            "date": current_date,
-            "time": time,
-            "liga": " ".join(prefix.split()),
-            "runde": match.group("runde"),
-            "home": " ".join(match.group("home").split()),
-            "away": " ".join(match.group("away").split()),
-        }
-        matches.append(entry)
-
+    updated_at = format_updated_at(payload.get("I2cm", {}).get("Today"), year)
     return matches, updated_at
 
 
-def build_payload(pdf_path: Path) -> dict:
-    text = extract_text(pdf_path)
-    matches, updated_at = parse_matches(text)
+def build_payload(year: str) -> dict:
+    payload = fetch_json(year)
+    matches, updated_at = parse_matches(payload, year)
     if not matches:
-        raise RuntimeError("Keine Spieltermine im PDF gefunden.")
+        raise RuntimeError("Keine Spieltermine über die SwissTennis-API gefunden.")
     return {
-        "source": pdf_path.name,
+        "source": "clubresult-json",
+        "club_id": CLUB_ID,
+        "year": year,
         "updated_at": updated_at,
         "matches": matches,
     }
 
 
 def main() -> int:
-    pdf_path = Path(sys.argv[1]).expanduser() if len(sys.argv) > 1 else default_input_path()
-    output_path = Path(sys.argv[2]).expanduser() if len(sys.argv) > 2 else DEFAULT_OUTPUT
+    parser = argparse.ArgumentParser(description="Importiert SwissTennis ClubResult-JSON und erzeugt matches.json.")
+    parser.add_argument("--year", default=current_year_str(), help="Jahr der Interclub-Saison, z.B. 2026")
+    parser.add_argument("--output", default=str(DEFAULT_OUTPUT), help="Zielpfad für matches.json")
+    args = parser.parse_args()
 
-    if not pdf_path.exists():
-        raise FileNotFoundError(f"PDF nicht gefunden: {pdf_path}")
-
-    payload = build_payload(pdf_path)
+    year = normalized_year(args.year)
+    output_path = Path(args.output).expanduser()
+    payload = build_payload(year)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    print(f"PDF: {pdf_path}")
+    print(f"API: {club_result_url(year)}")
     print(f"JSON: {output_path}")
+    print(f"Jahr: {year}")
     print(f"Stand: {payload.get('updated_at') or '-'}")
     print(f"Einträge: {len(payload['matches'])}")
     return 0

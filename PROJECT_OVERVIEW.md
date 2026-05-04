@@ -31,6 +31,7 @@ Hinweis: Diese Doku enthaelt bewusst keine Inhalte zu PowerPoint/Slides.
 - Haupttabellen:
   - `teams`
   - `players`
+  - `training_slots`
 
 ## 3) Aktuelle Datenquellen
 
@@ -39,8 +40,8 @@ Hinweis: Diese Doku enthaelt bewusst keine Inhalte zu PowerPoint/Slides.
 - Anzeige ueber API: `GET /api/teams`
 
 ### Trainingsplan
-- Quelle: statisch im Frontend (`app.js`)
-- Datenobjekte: `PLAN_DATA`, `LEGEND`
+- Quelle: SQL Datenbank (`training_slots`) plus statische Legende im Frontend
+- Anzeige ueber API: `GET /api/training-slots`
 
 ### Spieltermine
 - Quelle: SwissTennis PDF

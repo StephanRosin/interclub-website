@@ -1,8 +1,8 @@
 const PLAN_DATA = {
-  "Montag": [{"time":"08:00-09:00","courts":["","","","","",""]},{"time":"09:00-10:00","courts":["","","","","",""]},{"time":"10:00-11:00","courts":["","","","","",""]},{"time":"11:00-12:00","courts":["","","","","",""]},{"time":"12:00-13:00","courts":["","","","","",""]},{"time":"13:00-14:00","courts":["","","","","",""]},{"time":"14:00-15:00","courts":["","","","","","Tennisschule"]},{"time":"15:00-16:00","courts":["","","","","","Tennisschule"]},{"time":"16:00-17:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"17:00-18:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"18:00-19:00","courts":["12h","12h","12h","12h","TS (TCW)","Tennisschule"]},{"time":"19:00-20:00","courts":["1. Liga (Xenia)","1. Liga (Xenia)","55+ (P)","55+ (P)","TS (TCW)","Tennisschule"]},{"time":"20:00-21:00","courts":["2. Liga (Sophie)","2. Liga (Sophie)","45+ (M)","45+ (M)","TS (TCW)","Tennisschule"]},{"time":"21:00-22:00","courts":["12h","12h","45+ (M)","12h","TS (TCW)","Tennisschule"]}],
-  "Dienstag": [{"time":"08:00-09:00","courts":["","","","","","Tennisschule"]},{"time":"09:00-10:00","courts":["Senioren-Treff","Senioren-Treff","Senioren-Treff","","","Tennisschule"]},{"time":"10:00-11:00","courts":["Senioren-Treff","Senioren-Treff","Senioren-Treff","","","Tennisschule"]},{"time":"11:00-12:00","courts":["Senioren-Treff","Senioren-Treff","Senioren-Treff","","","Tennisschule"]},{"time":"12:00-13:00","courts":["","","","","","Tennisschule"]},{"time":"13:00-14:00","courts":["","","","","","Tennisschule"]},{"time":"14:00-15:00","courts":["","","","","","Tennisschule"]},{"time":"15:00-16:00","courts":["","","","","","Tennisschule"]},{"time":"16:00-17:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"17:00-18:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"18:00-19:00","courts":["12h","12h","12h","12h","TS (TCW)","Tennisschule"]},{"time":"19:00-20:00","courts":["1. Liga (Alex)","1. Liga (Alex)","30+ (Florine)","30+ (Florine)","TS (TCW)","Tennisschule"]},{"time":"20:00-21:00","courts":["1. Liga (Alex)","2. Liga (Nico)","2. Liga (Nico)","12h","TS (TCW)","Tennisschule"]},{"time":"21:00-22:00","courts":["12h","2. Liga (Nico)","12h","12h","TS (TCW)","Tennisschule"]}],
-  "Mittwoch": [{"time":"08:00-09:00","courts":["","","","","","Tennisschule"]},{"time":"09:00-10:00","courts":["","","","","","Tennisschule"]},{"time":"10:00-11:00","courts":["","","","","","Tennisschule"]},{"time":"11:00-12:00","courts":["","","","","","Tennisschule"]},{"time":"12:00-13:00","courts":["","","","","","Tennisschule"]},{"time":"13:00-14:00","courts":["JIC 1","JIC 1","Junioren- Treff","Junioren","Junioren","Junioren"]},{"time":"14:00-15:00","courts":["JIC 1","JIC 1 / Junioren-Treff","Junioren- Treff","Junioren","Junioren","Junioren"]},{"time":"15:00-16:00","courts":["JIC 1","JIC 1 / Junioren-Treff","Junioren- Treff","Junioren","Junioren","Junioren"]},{"time":"16:00-17:00","courts":["JIC 1","JIC 1 / Junioren-Treff","Junioren- Treff","Junioren","Junioren","Junioren"]},{"time":"17:00-18:00","courts":["JIC 1","JIC 1","","Junioren","Junioren","Junioren"]},{"time":"18:00-18:30","courts":["JIC 1","12h","NLC Simon","NLC Simon","TS (TCW)","Tennisschule"]},{"time":"18:30-19:00","courts":["JIC 1","12h","NLC Simon","NLC Simon","TS (TCW)","Tennisschule"]},{"time":"19:00-19:30","courts":["NLC (Jasmin)","NLC (Jasmin)","NLC Simon","NLC Simon","TS (TCW)","Tennisschule"]},{"time":"19:30-20:00","courts":["NLC (Jasmin)","NLC (Jasmin)","NLC 35+ (Sämi)","NLC 35+ (Sämi)","TS (TCW)","Tennisschule"]},{"time":"20:00-20:30","courts":["12h","12h","NLC 35+ (Sämi)","NLC 35+ (Sämi)","TS (TCW)","Tennisschule"]},{"time":"20:30-21:00","courts":["12h","12h","NLC 35+ (Sämi)","NLC 35+ (Sämi)","TS (TCW)","Tennisschule"]},{"time":"21:00-22:00","courts":["","12h","","","TS (TCW)","Tennisschule"]}],
-  "Donnerstag": [{"time":"08:00-09:00","courts":["","","","","","Tennisschule"]},{"time":"09:00-10:00","courts":["","","","","","Tennisschule"]},{"time":"10:00-11:00","courts":["Pajassen ?","Pajassen ?","Pajassen ?","","","Tennisschule"]},{"time":"11:00-12:00","courts":["Pajassen ?","Pajassen ?","Pajassen ?","","","Tennisschule"]},{"time":"12:00-13:00","courts":["","","","","","Tennisschule"]},{"time":"13:00-14:00","courts":["","","","","","Tennisschule"]},{"time":"14:00-15:00","courts":["","","","","","Tennisschule"]},{"time":"15:00-16:00","courts":["","","","","","Tennisschule"]},{"time":"16:00-17:00","courts":["","","","Junioren","Junioren","Tennisschule"]},{"time":"17:00-18:00","courts":["","","","Junioren","Junioren","Tennisschule"]},{"time":"18:00-19:00","courts":["12h","12h","12h","12h","TS (TCW)","Tennisschule"]},{"time":"19:00-20:00","courts":["30+ (Martina)","30+ (Martina)","30+ (Isabel)","30+ (Isabel)","TS (TCW)","Tennisschule"]},{"time":"20:00-21:00","courts":["35+ (2L)","35+ (2L)","35+ (1L)","35+ (1L)","TS (TCW)","Tennisschule"]},{"time":"21:00-22:00","courts":["35+ (2L)","12h","35+ (1L)","12h","TS (TCW)","Tennisschule"]}],
+  "Montag": [{"time":"08:00-09:00","courts":["","","","","",""]},{"time":"09:00-10:00","courts":["","","","","",""]},{"time":"10:00-11:00","courts":["","","","","",""]},{"time":"11:00-12:00","courts":["","","","","",""]},{"time":"12:00-13:00","courts":["","","","","",""]},{"time":"13:00-14:00","courts":["","","","","",""]},{"time":"14:00-15:00","courts":["","","","","","Tennisschule"]},{"time":"15:00-16:00","courts":["","","","","","Tennisschule"]},{"time":"16:00-17:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"17:00-18:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"18:00-19:00","courts":["12h","12h","12h","12h","TS (TCW)","Tennisschule"]},{"time":"19:00-20:00","courts":["Damen Aktiv 1. Liga","Damen Aktiv 1. Liga","Herren 55+ 3. Liga","Herren 55+ 3. Liga","TS (TCW)","Tennisschule"]},{"time":"20:00-21:00","courts":["Damen Aktiv 2. Liga","Damen Aktiv 2. Liga","Herren 45+ 2. Liga","Herren 45+ 2. Liga","TS (TCW)","Tennisschule"]},{"time":"21:00-22:00","courts":["12h","12h","Herren 45+ 2. Liga","12h","TS (TCW)","Tennisschule"]}],
+  "Dienstag": [{"time":"08:00-09:00","courts":["","","","","","Tennisschule"]},{"time":"09:00-10:00","courts":["Senioren-Treff","Senioren-Treff","Senioren-Treff","","","Tennisschule"]},{"time":"10:00-11:00","courts":["Senioren-Treff","Senioren-Treff","Senioren-Treff","","","Tennisschule"]},{"time":"11:00-12:00","courts":["Senioren-Treff","Senioren-Treff","Senioren-Treff","","","Tennisschule"]},{"time":"12:00-13:00","courts":["","","","","","Tennisschule"]},{"time":"13:00-14:00","courts":["","","","","","Tennisschule"]},{"time":"14:00-15:00","courts":["","","","","","Tennisschule"]},{"time":"15:00-16:00","courts":["","","","","","Tennisschule"]},{"time":"16:00-17:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"17:00-18:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"18:00-19:00","courts":["12h","12h","12h","12h","TS (TCW)","Tennisschule"]},{"time":"19:00-20:00","courts":["Herren Aktiv 1. Liga","Herren Aktiv 1. Liga","Damen 30+ 1. Liga","Damen 30+ 1. Liga","TS (TCW)","Tennisschule"]},{"time":"20:00-21:00","courts":["Herren Aktiv 1. Liga","Herren Aktiv 2. Liga","Herren Aktiv 2. Liga","12h","TS (TCW)","Tennisschule"]},{"time":"21:00-22:00","courts":["12h","Herren Aktiv 2. Liga","12h","12h","TS (TCW)","Tennisschule"]}],
+  "Mittwoch": [{"time":"08:00-09:00","courts":["","","","","","Tennisschule"]},{"time":"09:00-10:00","courts":["","","","","","Tennisschule"]},{"time":"10:00-11:00","courts":["","","","","","Tennisschule"]},{"time":"11:00-12:00","courts":["","","","","","Tennisschule"]},{"time":"12:00-13:00","courts":["","","","","","Tennisschule"]},{"time":"13:00-14:00","courts":["JIC 1","JIC 1","Junioren- Treff","Junioren","Junioren","Junioren"]},{"time":"14:00-15:00","courts":["JIC 1","JIC 1 / Junioren-Treff","Junioren- Treff","Junioren","Junioren","Junioren"]},{"time":"15:00-16:00","courts":["JIC 1","JIC 1 / Junioren-Treff","Junioren- Treff","Junioren","Junioren","Junioren"]},{"time":"16:00-17:00","courts":["JIC 1","JIC 1 / Junioren-Treff","Junioren- Treff","Junioren","Junioren","Junioren"]},{"time":"17:00-18:00","courts":["JIC 1","JIC 1","","Junioren","Junioren","Junioren"]},{"time":"18:00-18:30","courts":["JIC 1","12h","Herren Aktiv NLC","Herren Aktiv NLC","TS (TCW)","Tennisschule"]},{"time":"18:30-19:00","courts":["JIC 1","12h","Herren Aktiv NLC","Herren Aktiv NLC","TS (TCW)","Tennisschule"]},{"time":"19:00-19:30","courts":["Damen Aktiv NLC","Damen Aktiv NLC","Herren Aktiv NLC","Herren Aktiv NLC","TS (TCW)","Tennisschule"]},{"time":"19:30-20:00","courts":["Damen Aktiv NLC","Damen Aktiv NLC","Herren 35+ NLC","Herren 35+ NLC","TS (TCW)","Tennisschule"]},{"time":"20:00-20:30","courts":["12h","12h","Herren 35+ NLC","Herren 35+ NLC","TS (TCW)","Tennisschule"]},{"time":"20:30-21:00","courts":["12h","12h","Herren 35+ NLC","Herren 35+ NLC","TS (TCW)","Tennisschule"]},{"time":"21:00-22:00","courts":["","12h","","","TS (TCW)","Tennisschule"]}],
+  "Donnerstag": [{"time":"08:00-09:00","courts":["","","","","","Tennisschule"]},{"time":"09:00-10:00","courts":["","","","","","Tennisschule"]},{"time":"10:00-11:00","courts":["Pajassen ?","Pajassen ?","Pajassen ?","","","Tennisschule"]},{"time":"11:00-12:00","courts":["Pajassen ?","Pajassen ?","Pajassen ?","","","Tennisschule"]},{"time":"12:00-13:00","courts":["","","","","","Tennisschule"]},{"time":"13:00-14:00","courts":["","","","","","Tennisschule"]},{"time":"14:00-15:00","courts":["","","","","","Tennisschule"]},{"time":"15:00-16:00","courts":["","","","","","Tennisschule"]},{"time":"16:00-17:00","courts":["","","","Junioren","Junioren","Tennisschule"]},{"time":"17:00-18:00","courts":["","","","Junioren","Junioren","Tennisschule"]},{"time":"18:00-19:00","courts":["12h","12h","12h","12h","TS (TCW)","Tennisschule"]},{"time":"19:00-20:00","courts":["Damen 30+ NLC","Damen 30+ NLC","Damen 30+ 3. Liga","Damen 30+ 3. Liga","TS (TCW)","Tennisschule"]},{"time":"20:00-21:00","courts":["Herren 35+ 2. Liga","Herren 35+ 2. Liga","Herren 35+ 1. Liga","Herren 35+ 1. Liga","TS (TCW)","Tennisschule"]},{"time":"21:00-22:00","courts":["Herren 35+ 2. Liga","12h","Herren 35+ 1. Liga","12h","TS (TCW)","Tennisschule"]}],
   "Freitag": [{"time":"08:00-09:00","courts":["","","","","","Tennisschule"]},{"time":"09:00-10:00","courts":["","","","","","Tennisschule"]},{"time":"10:00-11:00","courts":["","","","","","Tennisschule"]},{"time":"11:00-12:00","courts":["","","","","","Tennisschule"]},{"time":"12:00-13:00","courts":["","","","","","Tennisschule"]},{"time":"13:00-14:00","courts":["","","","","","Tennisschule"]},{"time":"14:00-15:00","courts":["","","","","","Tennisschule"]},{"time":"15:00-16:00","courts":["","","","","","Tennisschule"]},{"time":"16:00-17:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"17:00-18:00","courts":["","","","","Junioren","Tennisschule"]},{"time":"18:00-19:00","courts":["Freitagsdoppel","Freitagsdoppel","","","Tennisschule","Tennisschule"]},{"time":"19:00-20:00","courts":["Freitagsdoppel","Freitagsdoppel","","","Tennisschule","Tennisschule"]},{"time":"20:00-21:00","courts":["","","","","Tennisschule","Tennisschule"]},{"time":"21:00-22:00","courts":["","","","","Tennisschule","Tennisschule"]}]
 };
 
@@ -62,11 +62,14 @@ const RESULTS_CURRENT_YEAR = String(new Date().getFullYear());
 const RESULTS_CLUB_NAME = "Waidberg ZH";
 
 let teamData = { damen: [], herren: [] };
+let trainingPlanData = PLAN_DATA;
 let matchData = [];
+let matchesYear = RESULTS_CURRENT_YEAR;
 let rankingChangeData = [];
 let waidcupEvents = [];
 let activeWaidcupEventId = "";
 let matchStand = "22. März 2026";
+let activeTrainingDay = "Montag";
 let teamResultsCache = new Map();
 let encountResultsCache = new Map();
 let resultsTeamsCache = new Map();
@@ -74,6 +77,7 @@ let availableResultsTeams = [];
 let activeResultsYear = RESULTS_YEARS.includes(RESULTS_CURRENT_YEAR) ? RESULTS_CURRENT_YEAR : RESULTS_YEARS[0];
 let activeResultsTeamId = "";
 let activeTeamSection = "damen";
+let encountReturnView = "results";
 
 const headerStandEl = document.getElementById("header-stand");
 const viewButtons = [...document.querySelectorAll("[data-view]")];
@@ -298,7 +302,8 @@ function renderTeams(key) {
 }
 
 function renderTrainingDay(day) {
-  const rows = (PLAN_DATA[day] || []).filter((row) => {
+  activeTrainingDay = day;
+  const rows = (trainingPlanData[day] || []).filter((row) => {
     const start = Number(String(row.time || "").slice(0, 2));
     return Number.isFinite(start) && start >= 18 && start < 22;
   });
@@ -311,7 +316,7 @@ function renderTrainingDay(day) {
     tdTime.textContent = row.time;
     tr.appendChild(tdTime);
 
-    row.courts.forEach((court) => {
+    row.courts.slice(0, 4).forEach((court) => {
       const td = document.createElement("td");
       if (court) {
         td.textContent = court;
@@ -358,6 +363,15 @@ function renderClubCell(value) {
   return cell;
 }
 
+function showMatchEncount(match) {
+  const encountId = Number(match?.encountId || 0);
+  if (!encountId) return;
+  const year = String(match?.year || matchesYear || RESULTS_CURRENT_YEAR);
+  encountReturnView = "matches";
+  showView("results");
+  loadEncountResults(encountId, year).catch(() => renderEncountError());
+}
+
 function renderMatches(activeRound = "1") {
   let lastDate = "";
   matchesBody.innerHTML = "";
@@ -385,7 +399,30 @@ function renderMatches(activeRound = "1") {
     const ligaCell = document.createElement("td");
     ligaCell.textContent = match.liga;
 
-    tr.append(dateCell, timeCell, ligaCell, renderClubCell(match.home), renderClubCell(match.away));
+    const resultCell = document.createElement("td");
+    resultCell.className = "results-right";
+    if (Number(match.encountId) > 0 && Number(match.validated) === 1) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "results-result-button";
+      button.title = "Begegnung öffnen";
+      const resultValue = document.createElement("span");
+      resultValue.className = "results-result-value";
+      resultValue.textContent = match.result || "–:–";
+      const resultHint = document.createElement("span");
+      resultHint.className = "results-result-hint";
+      resultHint.textContent = "Details";
+      button.append(resultValue, resultHint);
+      button.addEventListener("click", () => showMatchEncount(match));
+      resultCell.appendChild(button);
+    } else {
+      const muted = document.createElement("span");
+      muted.className = "results-muted";
+      muted.textContent = match.result || "–:–";
+      resultCell.appendChild(muted);
+    }
+
+    tr.append(dateCell, timeCell, ligaCell, renderClubCell(match.home), renderClubCell(match.away), resultCell);
     matchesBody.appendChild(tr);
   });
 
@@ -697,6 +734,7 @@ function renderTeamResults(payload) {
       resultHint.textContent = "Details";
       button.append(resultValue, resultHint);
       button.addEventListener("click", () => {
+        encountReturnView = "results";
         loadEncountResults(encount?.encountId, activeResultsYear).catch(() => renderEncountError());
       });
       resultCell.appendChild(button);
@@ -1167,9 +1205,16 @@ async function loadTeams() {
 async function loadMatches() {
   const payload = await fetchJson("./matches.json");
   matchData = Array.isArray(payload.matches) ? payload.matches : [];
+  matchesYear = String(payload.year || RESULTS_CURRENT_YEAR);
   matchStand = payload.updated_at || matchStand;
   setHeaderStand(matchStand);
   renderMatches("1");
+}
+
+async function loadTrainingPlan() {
+  const payload = await fetchJson("/api/training-slots");
+  trainingPlanData = payload.days && typeof payload.days === "object" ? payload.days : PLAN_DATA;
+  renderTrainingDay(activeTrainingDay);
 }
 
 async function loadRankingChanges() {
@@ -1250,13 +1295,17 @@ resultsYearButtons.forEach((button) => {
 
 resultsBackEl.addEventListener("click", () => {
   showResultsOverview();
+  if (encountReturnView === "matches") {
+    showView("matches");
+  }
+  encountReturnView = "results";
 });
 
 window.addEventListener("hashchange", () => showView(activeViewFromHash(), false));
 
 renderLegend();
 renderComparison();
-renderTrainingDay("Montag");
+renderTrainingDay(activeTrainingDay);
 showView(activeViewFromHash(), false);
 renderResultsYearSwitch();
 
@@ -1266,8 +1315,12 @@ loadTeams().catch(() => {
   teamsEmptyEl.textContent = "Fehler beim Laden der Teamdaten aus der Datenbank.";
 });
 
+loadTrainingPlan().catch(() => {
+  renderTrainingDay(activeTrainingDay);
+});
+
 loadMatches().catch(() => {
-  matchesBody.innerHTML = '<tr><td colspan="5">Fehler beim Laden der Spieltermine.</td></tr>';
+  matchesBody.innerHTML = '<tr><td colspan="6">Fehler beim Laden der Spieltermine.</td></tr>';
 });
 
 fetchResultsTeams(RESULTS_CURRENT_YEAR)
