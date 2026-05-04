@@ -640,7 +640,9 @@ class Handler(BaseHTTPRequestHandler):
         else:
             rel = path.lstrip("/")
 
-        if rel not in ALLOWED_STATIC_FILES:
+        if rel not in ALLOWED_STATIC_FILES and not (
+            rel.startswith("modules/") and rel.endswith(".js") and ".." not in rel
+        ):
             self._send(404, b"Not Found", "text/plain; charset=utf-8")
             return
 

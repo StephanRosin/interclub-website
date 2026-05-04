@@ -58,6 +58,7 @@ Hinweis: Diese Doku enthaelt bewusst keine Inhalte zu PowerPoint/Slides.
   - `#training`
   - `#matches`
 - Umschalten erfolgt clientseitig (kein Full Page Reload)
+- Frontend-JavaScript ist in native ES Modules unter `public/modules/` aufgeteilt.
 
 ### Asset-Struktur (oeffentlich)
 Pfad: `public/`
@@ -153,6 +154,7 @@ Pfad: `public/`
 - `public/index.html` - Einstieg SPA
 - `public/style.css` - Styling
 - `public/app.js` - Clientlogik
+- `public/modules/` - Tab-spezifische Frontend-Module
 - `import_clubresult.py` - PDF -> JSON
 - `update_matches_server.sh` - taeglicher Server-Import (Cron)
 - `update_matches_remote.py` - manuelles Remote-Update vom lokalen Rechner
