@@ -7,6 +7,35 @@ let waidcupEventTabsEl;
 let waidcupBodyEl;
 let waidcupEmptyEl;
 
+function clearElement(element) {
+  element.replaceChildren();
+}
+
+function appendTableMessage(body, message, colSpan = 3) {
+  clearElement(body);
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.colSpan = colSpan;
+  td.textContent = message;
+  tr.appendChild(td);
+  body.appendChild(tr);
+}
+
+function safeExternalUrl(rawValue) {
+  const raw = String(rawValue || "").trim();
+  if (!raw) return null;
+
+  try {
+    const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    const url = new URL(normalized);
+    if (!["http:", "https:"].includes(url.protocol)) return null;
+    if (!["mytennis.ch", "www.mytennis.ch"].includes(url.hostname.toLowerCase())) return null;
+    return url;
+  } catch {
+    return null;
+  }
+}
+
 export function initWaidcup() {
   waidcupUpdatedEl = document.getElementById("waidcup-updated");
   waidcupEventTabsEl = document.getElementById("waidcup-event-tabs");
@@ -21,8 +50,8 @@ export function initWaidcup() {
   });
 
   return loadWaidcupRegistrations().catch(() => {
-    waidcupBodyEl.innerHTML = "";
-    waidcupEventTabsEl.innerHTML = "";
+    clearElement(waidcupBodyEl);
+    clearElement(waidcupEventTabsEl);
     waidcupUpdatedEl.textContent = "Fehler beim Laden der Waidcup-Anmeldungen.";
     waidcupEmptyEl.style.display = "block";
     waidcupEmptyEl.textContent = "Waidcup-Anmeldungen konnten nicht geladen werden.";
@@ -60,10 +89,11 @@ function buildWaidcupPlayerLine(player, suffix = "") {
   const line = document.createElement("div");
   line.className = "waidcup-entry-line";
 
-  if (rawUrl) {
+  const safeUrl = safeExternalUrl(rawUrl);
+  if (safeUrl) {
     const link = document.createElement("a");
     link.className = "waidcup-player-link";
-    link.href = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
+    link.href = safeUrl.toString();
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.textContent = name;
@@ -88,7 +118,7 @@ function renderWaidcupEventTabs() {
   const events = Array.isArray(waidcupEvents) ? waidcupEvents : [];
   if (!events.length) {
     activeWaidcupEventId = "";
-    waidcupEventTabsEl.innerHTML = "";
+    clearElement(waidcupEventTabsEl);
     return;
   }
 
@@ -96,12 +126,17 @@ function renderWaidcupEventTabs() {
     activeWaidcupEventId = String(events[0].event_id);
   }
 
-  waidcupEventTabsEl.innerHTML = events
-    .map((event) => {
-      const activeClass = String(event.event_id) === String(activeWaidcupEventId) ? "active" : "";
-      return `<button type="button" class="${activeClass}" data-waidcup-event-id="${String(event.event_id)}">${event.event_name || "Konkurrenz"}</button>`;
-    })
-    .join("");
+  clearElement(waidcupEventTabsEl);
+  events.forEach((event) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.waidcupEventId = String(event.event_id);
+    button.textContent = event.event_name || "Konkurrenz";
+    if (String(event.event_id) === String(activeWaidcupEventId)) {
+      button.classList.add("active");
+    }
+    waidcupEventTabsEl.appendChild(button);
+  });
 }
 
 export function renderWaidcup() {
@@ -109,7 +144,7 @@ export function renderWaidcup() {
   renderWaidcupEventTabs();
   if (!events.length) {
     waidcupUpdatedEl.textContent = "Keine Anmeldungen gefunden.";
-    waidcupBodyEl.innerHTML = '<tr><td colspan="3">Keine Anmeldungen vorhanden.</td></tr>';
+    appendTableMessage(waidcupBodyEl, "Keine Anmeldungen vorhanden.");
     waidcupEmptyEl.style.display = "block";
     return;
   }
@@ -121,17 +156,17 @@ export function renderWaidcup() {
   waidcupEmptyEl.style.display = "none";
   const activeEvent = events.find((event) => String(event.event_id) === String(activeWaidcupEventId));
   if (!activeEvent) {
-    waidcupBodyEl.innerHTML = '<tr><td colspan="3">Keine Eventdaten gefunden.</td></tr>';
+    appendTableMessage(waidcupBodyEl, "Keine Eventdaten gefunden.");
     return;
   }
 
   const players = Array.isArray(activeEvent.players) ? activeEvent.players : [];
   if (!players.length) {
-    waidcupBodyEl.innerHTML = '<tr><td colspan="3">Noch keine Anmeldungen vorhanden.</td></tr>';
+    appendTableMessage(waidcupBodyEl, "Noch keine Anmeldungen vorhanden.");
     return;
   }
 
-  waidcupBodyEl.innerHTML = "";
+  clearElement(waidcupBodyEl);
   players.forEach((player) => {
     const tr = document.createElement("tr");
 

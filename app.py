@@ -41,6 +41,19 @@ WAIDCUP_PUBLIC_API_URL = os.environ.get(
     "http://192.168.178.94:3101/public-api/tournament-registrations",
 )
 DAY_ORDER = {day: index for index, day in enumerate(TRAINING_DAYS)}
+CONTENT_SECURITY_POLICY = "; ".join(
+    [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self'",
+        "img-src 'self' data: https:",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "frame-ancestors 'self'",
+    ]
+)
 
 
 def db_connect():
@@ -540,16 +553,55 @@ def load_waidcup_registrations() -> dict:
 
 
 class Handler(BaseHTTPRequestHandler):
-    def _send(self, status: int, body: bytes, ctype: str) -> None:
+    def _send_headers(self, status: int, body_length: int, ctype: str) -> None:
         self.send_response(status)
         self.send_header("Content-Type", ctype)
-        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Length", str(body_length))
         self.send_header("Cache-Control", "no-cache")
+        self.send_header("Content-Security-Policy", CONTENT_SECURITY_POLICY)
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
         self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
         self.end_headers()
+
+    def _send(self, status: int, body: bytes, ctype: str) -> None:
+        self._send_headers(status, len(body), ctype)
         self.wfile.write(body)
+
+    def send_error(self, code, message=None, explain=None):
+        body = (message or self.responses.get(code, ("Error",))[0]).encode("utf-8")
+        self._send(code, body, "text/plain; charset=utf-8")
+
+    def do_HEAD(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+
+        if path == "/":
+            rel = "index.html"
+        else:
+            rel = path.lstrip("/")
+
+        if rel not in ALLOWED_STATIC_FILES and not (
+            rel.startswith("modules/") and rel.endswith(".js") and ".." not in rel
+        ):
+            self._send_headers(404, 0, "text/plain; charset=utf-8")
+            return
+
+        target = (WEB_DIR / rel).resolve()
+
+        try:
+            target.relative_to(WEB_DIR.resolve())
+        except Exception:
+            self._send_headers(403, 0, "text/plain; charset=utf-8")
+            return
+
+        if not target.exists() or not target.is_file():
+            self._send_headers(404, 0, "text/plain; charset=utf-8")
+            return
+
+        self._send_headers(200, target.stat().st_size, content_type(target))
 
     def do_GET(self):
         parsed = urlparse(self.path)
